@@ -37,8 +37,8 @@ module Matrix : Matrix_type = struct
     if(m = 0) then []
     else
       let rec prependzero mat = match mat with
-                          [] -> []
-                        | x::xs -> (0.::x)::(prependzero xs)
+          [] -> []
+        | x::xs -> (0.::x)::prependzero xs
       in
       (1.0::mkzerov (m-1))::prependzero (mkunitm (m-1));;
 
@@ -85,5 +85,32 @@ module Matrix : Matrix_type = struct
     else
       (getFirstColumn mat)::transm (removeFirstColumn mat);;
 
+  let rec getNonZeroRow mat = match mat with
+      [] -> []
+    | x::xs -> if (hd x <> 0.) then x else getNonZeroRow xs;;
+
+  let rec list_swap l u v = match l with
+      [] -> []
+    | x::xs -> (if x = u then v
+                else if x = v then u
+                else x)::(list_swap xs u v);;
+
+  let makeFirstRowNonZero mat = 
+    list_swap mat (hd mat) (getNonZeroRow mat);;
   
+  let rec rowOperations mat v = match mat with
+      [] -> []
+    | x::xs -> 
+        let m = -.(hd x) /. (hd v) in
+        addv x (scalermultv m v)::rowOperations xs v;;
+  
+  let rec detm mat = match mat with
+      [] -> 1.
+    | x::xs ->
+      if(iszerov (getFirstColumn mat) = true) then 0.
+      else if (hd (hd mat)) <> 0. then
+        (hd x) *. detm (removeFirstColumn (rowOperations xs x))
+      else match (makeFirstRowNonZero mat) with
+        x::xs -> -. (hd x) *. detm (removeFirstColumn (rowOperations xs x))
+
 end

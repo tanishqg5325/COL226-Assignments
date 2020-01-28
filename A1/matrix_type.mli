@@ -19,6 +19,8 @@ module type Matrix_type = sig
   val multm: matrix -> matrix -> matrix
   (* Transpose Matrix *)
   val transm: matrix -> matrix
-
+  (* Determinant of Matrix *)
   val detm: matrix -> float
+  (* Inverse of Matrix *)
+  val makeFirstRowNonZero: matrix -> matrix
 end
