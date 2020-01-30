@@ -22,7 +22,8 @@ isvzerov: vector -> bool, checks if a given vector is a  zero vector
 addv: vector -> vector -> vector,  adds two vectors v1 and v2 (of the same dimension)
 scalarmultv: float -> vector -> vector,  given a scalar c and a vector v, performs the scalar multiplication 
 dotprodv: vector -> vector -> float, given two vectors  v1 and v2 of the same dimension, returns their dot product v1 . v2
-crossprodv: vector -> vector -> vector, given two vectors v1 and v2  of the same dimension, returns their cross product  v1 x v2
+crossprodv: vector -> vector -> vector, given two vectors v1 and v2 in 3 dimensions, returns their cross product  v1 x v2.   
+(In general, for extra credit, you can define a function crossprodv of  n-1 vectors with dimension n).
 
 
 
@@ -43,5 +44,4 @@ detm: matrix -> float, compute the determinant of a matrix (assuming it is a squ
 invm: matrix -> matrix, return the inverse of a given matrix (if defined).
 Define suitable exceptions (the TAs will give you the standard names and type to use, so that your programs can run on their test data)
 
-If you can think of other meaningful functions, do add them to your set of functions.
-
+If you can think of other meaningful functions, do add them to your set of functions. 
