@@ -22,5 +22,5 @@ module type Matrix_type = sig
   (* Determinant of Matrix *)
   val detm: matrix -> float
   (* Inverse of Matrix *)
-  val makeFirstRowNonZero: matrix -> matrix
+  val invm: matrix -> matrix
 end

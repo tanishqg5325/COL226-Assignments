@@ -3,6 +3,7 @@ open Matrix_type
 
 module Matrix : Matrix_type = struct
   type matrix = (float list) list
+  exception SingularMatrix;;
 
   let mdim mat = (length mat, length (hd mat))
 
@@ -112,5 +113,36 @@ module Matrix : Matrix_type = struct
         (hd x) *. detm (removeFirstColumn (rowOperations xs x))
       else match (makeFirstRowNonZero mat) with
         x::xs -> -. (hd x) *. detm (removeFirstColumn (rowOperations xs x))
+
+  let rec addColumn mat v = match mat with
+      [] -> []
+    | x::xs -> ((hd v)::x)::addColumn xs (tl v);;
+
+  let rec createAugmented mat1 mat2 = 
+    if (length (hd mat1) = 0) then mat2
+    else addColumn (createAugmented (removeFirstColumn mat1) mat2) (getFirstColumn mat1);;
+  
+  let rec getMatrixBelow mat row = match mat with
+      [] -> []
+    | x::xs -> if (row = 0) then mat else getMatrixBelow xs (row-1);;
+  
+  let rec getMatrixAbove mat row = match mat with
+      [] -> []
+    | x::xs -> if (row = 0) then [] else x::getMatrixAbove xs (row-1);;
+
+  let normalizeFirstRow mat = match mat with
+      [] -> []
+    | x::xs -> (scalermultv (1. /. (hd x)) x)::xs;;
+  
+  let rec solveInv mat row = 
+    if (row = (length mat)) then mat
+    else
+        let above = getMatrixAbove mat row in
+        match normalizeFirstRow (makeFirstRowNonZero (getMatrixBelow mat row)) with
+          x::xs -> solveInv (removeFirstColumn (append (rowOperations above x) (x::(rowOperations xs x)))) (row+1);;
+
+  let rec invm mat = 
+    if ((detm mat) = 0.) then raise SingularMatrix
+    else solveInv (createAugmented mat (mkunitm (length mat))) 0;;
 
 end
