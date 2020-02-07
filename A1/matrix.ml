@@ -72,9 +72,11 @@ module Matrix : Matrix_type = struct
   
   let rec iszerom m = 
       if (isinvalidm m) then raise InvalidInput
-      else match m with
-          [] -> true
-        | x::xs -> (iszerov x) && (iszerom xs);;
+      else 
+        let rec iszeromutil m = match m with
+            [] -> true
+          | x::xs -> (iszerov x) && (iszeromutil xs)
+        in iszeromutil m;;
   
   let rec mkunitm m_ =
     if m_ < 0 then raise InvalidInput
@@ -92,11 +94,12 @@ module Matrix : Matrix_type = struct
   
   let rec isunitm m = 
     if (isinvalidm m) then raise InvalidInput
-    else match m with
-        [] -> true
-      | x::xs -> 
-          if (length m) <> (length (hd m)) then false 
-          else if((hd x) <> 1.) then false
+    else if (length m) <> (length (hd m)) then false 
+    else
+      let rec isunitmutil m = match m with
+          [] -> true
+        | x::xs -> 
+          if((hd x) <> 1.) then false
           else if(iszerov (tl x) = false) then false
           else
             let rec iszerovertical mat = match mat with
@@ -104,44 +107,52 @@ module Matrix : Matrix_type = struct
               | x::xs -> ((hd x) = 0.) && (iszerovertical xs)
             in
             if (iszerovertical xs) = false then false
-            else isunitm (removeFirstColumn xs);;
+            else isunitmutil (removeFirstColumn xs)
+      in isunitmutil m;;
   
   let rec addm m1 m2 =
     if (isinvalidm m1) || (isinvalidm m2) then raise InvalidInput
-    else match m1 with
-        [] -> if (isEmpty m2) then []
-              else raise UnequalMatrixShape
-      | x::xs -> if (isEmpty m2) then raise UnequalMatrixShape
-                  else (addv x (hd m2))::addm xs (tl m2);;
+    else if (length m1) <> (length m2) then raise UnequalMatrixShape
+    else if (length (hd m1)) <> (length (hd m2)) then raise UnequalMatrixShape
+    else
+      let rec addmutil m1 m2 = match m1 with
+          [] -> []
+        | x::xs -> (addv x (hd m2))::addmutil xs (tl m2)
+      in addmutil m1 m2;;
 
   let rec scalarmultm c m = 
     if (isinvalidm m) then raise InvalidInput
-    else match m with
-        [] -> []
-      | x::xs -> (scalarmultv c x)::scalarmultm c xs;;
+    else 
+      let rec scalarmultmutil c m = match m with
+          [] -> []
+        | x::xs -> (scalarmultv c x)::scalarmultmutil c xs
+      in scalarmultmutil c m;;
 
   let rec getFirstColumn mat = match mat with
       [] -> []
     | x::xs -> (hd x)::getFirstColumn xs;;
 
   let rec multvm v mat = 
-    if(snd (mdim mat) = 0) then []
+    if length (hd mat) = 0 then []
     else
       (dotprodv v (getFirstColumn mat))::multvm v (removeFirstColumn mat);;
   
   let rec multm m1 m2 = 
     if (isinvalidm m1) || (isinvalidm m2) then raise InvalidInput
-    else match m1 with
-        [] -> []
-      | x::xs -> 
-          if (length x) <> (length m2) then raise IncompatibleMatrixShape
-          else (multvm x m2)::multm xs m2;;
+    else if length (hd m1) <> length m2 then raise IncompatibleMatrixShape
+    else
+      let rec multmutil m1 m2 = match m1 with
+          [] -> []
+        | x::xs -> (multvm x m2)::multmutil xs m2
+      in multmutil m1 m2;;
   
   let rec transm m = 
     if (isinvalidm m) then raise InvalidInput
-    else if(length (hd m) = 0) then []
     else
-      (getFirstColumn m)::transm (removeFirstColumn m);;
+      let rec transmutil m = 
+        if(length (hd m) = 0) then []
+        else (getFirstColumn m)::transmutil (removeFirstColumn m)
+      in transmutil m;;
 
   let rec getNonZeroRow mat = match mat with
       [] -> []
@@ -163,16 +174,18 @@ module Matrix : Matrix_type = struct
   
   let rec detm m = 
     if (isinvalidm m) then raise InvalidInput
-    else match m with
-        [] -> 1.
-      | x::xs ->
-        if (length x) <> (length m) then raise InvalidInput
-        else if(iszerov (getFirstColumn m) = true) then 0.
-        else if (hd (hd m)) <> 0. then
-          (hd x) *. detm (removeFirstColumn (rowOperations xs x))
-        else match (makeFirstRowNonZero m) with
-            [] -> 0.
-          | x::xs -> -. (hd x) *. detm (removeFirstColumn (rowOperations xs x))
+    else if (length m) <> (length (hd m)) then raise InvalidInput
+    else 
+      let rec detmutil m = match m with
+          [] -> 1.
+        | x::xs ->
+            if(iszerov (getFirstColumn m) = true) then 0.
+            else if (hd (hd m)) <> 0. then
+              (hd x) *. detmutil (removeFirstColumn (rowOperations xs x))
+            else match (makeFirstRowNonZero m) with
+                [] -> 0.
+              | x::xs -> -. (hd x) *. detmutil (removeFirstColumn (rowOperations xs x))
+      in detmutil m;;
 
   let rec addColumn mat v = match mat with
       [] -> []
