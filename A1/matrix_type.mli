@@ -1,5 +1,15 @@
 module type Matrix_type = sig
-  type matrix = (float list) list
+  type vector = float list
+  type matrix = float list list
+
+  val vdim: vector -> int
+  val mkzerov: int -> vector
+  val iszerov: vector -> bool
+  val addv: vector -> vector -> vector
+  val scalarmultv: float -> vector -> vector
+  val dotprodv: vector -> vector -> float
+  val crossprodv: vector -> vector -> vector
+  val crossprodvn: matrix -> vector
 
   (* Dimension *)
   val mdim: matrix -> int * int
@@ -14,7 +24,7 @@ module type Matrix_type = sig
   (* Add Matrices *)
   val addm: matrix -> matrix -> matrix
   (* Scaler Multiplication *)
-  val scalermultm: float -> matrix -> matrix
+  val scalarmultm: float -> matrix -> matrix
   (* Matrix Multiplication *)
   val multm: matrix -> matrix -> matrix
   (* Transpose Matrix *)
