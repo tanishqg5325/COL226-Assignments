@@ -1,18 +1,22 @@
+(* Header *)
 {
     type index = INDICE of int * int;;
     type token = 
-        FLOAT of float
-      | LP | RP
-      | LB | RB
-      | COMMA
-      | COLON
-      | INDICE of int * int
-      | RANGE of index * index
-      | COUNT | ROWCOUNT | COLCOUNT | SUM | ROWSUM | COLSUM | AVG | ROWAVG | COLAVG
-      | MIN | ROWMIN | COLMIN | MAX | ROWMAX | COLMAX
-      | ADD | SUBT | MULT | DIV
-      | EQ
-      | DELIMITER;;
+        FLOAT of float                  (* floating constant with optional sign w/o initial and trailing zeros *)
+      | LP | RP                         (* left parenthesis "(", right parenthesis ")" *)
+      | LB | RB                         (* left bracket "[", right bracket "]" *)
+      | COMMA                           (* comma "," *)
+      | COLON                           (* colon ":" *)
+      | INDICE of int * int             (* indices "[i, j]" *)
+      | RANGE of index * index          (* ranges "(l : l)" *)
+      | COUNT | ROWCOUNT | COLCOUNT
+      | SUM | ROWSUM | COLSUM
+      | AVG | ROWAVG | COLAVG
+      | MIN | ROWMIN | COLMIN
+      | MAX | ROWMAX | COLMAX           (* Unary Operators *)
+      | ADD | SUBT | MULT | DIV         (* Binary Operators *)
+      | EQ                              (* assignment operator ":=" *)
+      | DELIMITER                       (* semicolon ";" *);;
       exception InvalidToken of char ;;
     
     let find_num s =
@@ -72,12 +76,18 @@
       RANGE(first, second);;
 }
 
+
 let digit = ['0'-'9']
 let digit_ = ['1'-'9']
+(* Regex for natural numbers *)
 let number = ('0'|((digit_)digit*))
+(* Regex for floating constants *)
 let float_constant = ['+''-']?(number)['.']('0' | digit*(digit_))
+(* Regex for whitespace *)
 let sp = [' ' '\t']+
+(* Regex for indices *)
 let indice = ['['](sp*)(number)(sp*)[','](sp*)(number)(sp*)[']']
+(* Regex for ranges *)
 let range = ['('](sp*)(indice)(sp*)[':'](sp*)(indice)(sp*)[')']
 
 rule read = parse
@@ -115,6 +125,7 @@ rule read = parse
     | ';'                       {DELIMITER :: (read lexbuf)}
     | _ as s                    {raise (InvalidToken s)}
 
+(* trailer *)
 {
 	let scanner s = read(Lexing.from_string s)
 }
