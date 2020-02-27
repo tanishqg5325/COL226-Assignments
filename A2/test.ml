@@ -6,7 +6,7 @@ scanner ";:=";;
 scanner ";:";;
 scanner "ADD";;
 scanner "ADDSUBTMULTCOUNT DIV";;
-scanner "([5, 6] : [100, 90])";;
+scanner "( [556 ,    6514]  : [  0 ,    90 ]  )";;
 scanner "[    6516    ,   8201    ]";;
 scanner "65920765.65405";;
 scanner "065920765.654050";;

@@ -17,70 +17,18 @@
       | ADD | SUBT | MULT | DIV         (* Binary Operators *)
       | EQ                              (* assignment operator ":=" *)
       | DELIMITER                       (* semicolon ";" *);;
-      exception InvalidToken of char ;;
-    
-    let find_num s =
-      let rec find_num_util s i = if ((s.[i] >= '0') && (s.[i] <= '9')) then i
-                                  else find_num_util s (i+1)
-      in find_num_util s 0;;
-
-    let find_non_num s = 
-      let rec find_non_num_util s i = if (s.[i] < '0') || (s.[i] > '9') then i
-                                      else find_non_num_util s (i+1)
-      in find_non_num_util s 0;;
-
-    let lex_indice s = 
-      let start1 = find_num s in
-      let new_s = String.sub s start1 (String.length s - start1) in
-      let end1 = find_non_num new_s in
-      let first = int_of_string (String.sub new_s 0 end1) in
-      let new_s2 = String.sub new_s end1 (String.length new_s - end1) in
-      let start2 = find_num new_s2 in
-      let new_s3 = String.sub new_s2 start2 (String.length new_s2 - start2) in
-      let end2 = find_non_num new_s3 in
-      let second = int_of_string (String.sub new_s3 0 end2) in
-      INDICE(first, second);;
-
-    let find_open_bracket s = 
-      let rec find_open_bracket_util s i = if s.[i] = '[' then i
-                                            else find_open_bracket_util s (i+1)
-      in find_open_bracket_util s 0;;
-
-    let find_close_bracket s = 
-      let rec find_close_bracket_util s i = if s.[i] = ']' then (i+1)
-                                            else find_close_bracket_util s (i+1)
-      in find_close_bracket_util s 0;;
-
-    let convertTokenToIndex (t): index = match t with
-        INDICE(x, y) -> INDICE(x, y)
-      | _ -> INDICE(-1, -1);;
-    
-    let lex_range s =
-      let start1 = find_open_bracket s in
-      let new_s = String.sub s start1 (String.length s - start1) in
-      let end1 = find_close_bracket new_s in
-      let first = convertTokenToIndex (lex_indice (String.sub new_s 0 end1)) in
-      let new_s2 = String.sub new_s end1 (String.length new_s - end1) in
-      let start2 = find_open_bracket new_s2 in
-      let new_s3 = String.sub new_s2 start2 (String.length new_s2 - start2) in
-      let end2 = find_close_bracket new_s3 in
-      let second = convertTokenToIndex (lex_indice (String.sub new_s3 0 end2)) in
-      RANGE(first, second);;
+    exception InvalidToken of char ;;
 }
 
 
 let digit = ['0'-'9']
 let digit_ = ['1'-'9']
 (* Regex for natural numbers *)
-let number = ('0'|((digit_)digit*))
+let number = ('0' | ((digit_)digit*))
 (* Regex for floating constants *)
 let float_constant = ['+''-']?(number)['.']('0'|digit*(digit_))
 (* Regex for whitespace *)
 let sp = [' ' '\t']+
-(* Regex for indices *)
-let indice = ['['](sp*)(number)(sp*)[','](sp*)(number)(sp*)[']']
-(* Regex for ranges *)
-let range = ['('](sp*)(indice)(sp*)[':'](sp*)(indice)(sp*)[')']
 
 rule read = parse
       eof                       {[]}
@@ -92,8 +40,10 @@ rule read = parse
     | ']'                       {RB :: (read lexbuf)}
     | ','                       {COMMA :: (read lexbuf)}
     | ':'                       {COLON :: (read lexbuf)}
-    | indice as i               {(lex_indice i) :: (read lexbuf)}
-    | range as r                {(lex_range r) :: (read lexbuf)}
+    | ['[']sp*(number as n1)sp*[',']sp*(number as n2)sp*[']'] (* Regex for indice *)
+        {INDICE((int_of_string n1), (int_of_string n2)) :: (read lexbuf)}
+    | ['(']sp*['[']sp*(number as n1)sp*[',']sp*(number as n2)sp*[']']sp*[':']sp*['[']sp*(number as n3)sp*[',']sp*(number as n4)sp*[']']sp*[')'] (* Regex for range *)
+        {RANGE(INDICE((int_of_string n1), (int_of_string n2)), INDICE((int_of_string n3), (int_of_string n4))) :: (read lexbuf)}
     | "COUNT"                   {COUNT :: (read lexbuf)}
     | "ROWCOUNT"                {ROWCOUNT :: (read lexbuf)}
     | "COLCOUNT"                {COLCOUNT :: (read lexbuf)}
