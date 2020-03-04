@@ -22,6 +22,13 @@ exception InvalidRange
 exception IncompatibleRange
 exception DivideByZero
 
+let isInvalidRange (r:range): bool = match r with
+    RANGE(INDICE(i1, j1), INDICE(i2, j2)) -> (i1 > i2) || (j1 > j2);;
+
+let isIncompatibleRange (r1:range) (r2:range): bool = match r1 with 
+    RANGE(INDICE(a1, a2), INDICE(b1, b2)) -> match r2 with
+      RANGE(INDICE(c1, c2), INDICE(d1, d2)) -> ((b1-a1) = (d1-c1)) && ((b2-a2) = (d2-c2));;
+
 let rec full_count (s:sheet) (r:range) (i:index): sheet = s;;
 let rec row_count (s:sheet) (r:range) (i:index): sheet = s;;
 let rec col_count (s:sheet) (r:range) (i:index): sheet = s;;
@@ -54,7 +61,8 @@ let rec div_range (s:sheet) (r1:range) (r2:range) (i:index): sheet = s;;
 
 let eval (s:sheet) (f:formula): sheet = match f with
     UNARY(i_, t, r) -> (
-      match t with
+      if (isInvalidRange r) then raise InvalidRange
+      else match t with
           COUNT     -> full_count s r i_
         | ROWCOUNT  -> row_count s r i_
         | COLCOUNT  -> col_count s r i_
@@ -74,7 +82,9 @@ let eval (s:sheet) (f:formula): sheet = match f with
     )
 
   | BINARY1(i_, t, r1, r2) -> (
-      match t with
+      if (isInvalidRange r1) || (isInvalidRange r2) then raise InvalidRange
+      else if (isIncompatibleRange r1 r2) then raise IncompatibleRange
+      else match t with
           ADD   -> add_range s r1 r2 i_
         | SUBT  -> subt_range s r1 r2 i_
         | MULT  -> mult_range s r1 r2 i_
@@ -83,25 +93,28 @@ let eval (s:sheet) (f:formula): sheet = match f with
     )
   
   | BINARY2(i_, t, c, r) -> (
-      match t with
-          ADD   -> s
+      if (isInvalidRange r) then raise InvalidRange
+      else match t with
+          ADD   -> add_const s r c i_
         | SUBT  -> s
-        | MULT  -> s
+        | MULT  -> mult_const s r c i_
         | DIV   -> s
         | _     -> raise NotPossible
     )
 
   | BINARY3(i_, t, r, c) -> (
-      match t with
-          ADD   -> s
-        | SUBT  -> s
-        | MULT  -> s
-        | DIV   -> s
+      if (isInvalidRange r) then raise InvalidRange
+      else match t with
+          ADD   -> add_const s r c i_
+        | SUBT  -> subt_const s r c i_
+        | MULT  -> mult_const s r c i_
+        | DIV   -> div_const s r c i_
         | _     -> raise NotPossible
     )
 
   | BINARY4(i_, t, i, r) -> (
-      match t with
+      if (isInvalidRange r) then raise InvalidRange
+      else match t with
           ADD   -> s
         | SUBT  -> s
         | MULT  -> s
@@ -110,7 +123,8 @@ let eval (s:sheet) (f:formula): sheet = match f with
     )
 
   | BINARY5(i_, t, r, i) -> (
-      match t with
+      if (isInvalidRange r) then raise InvalidRange
+      else match t with
           ADD   -> s
         | SUBT  -> s
         | MULT  -> s
