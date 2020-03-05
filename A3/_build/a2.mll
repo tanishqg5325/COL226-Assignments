@@ -15,7 +15,8 @@ let float_constant = ['+''-']?(number)['.']('0'|digit*(digit_))
 let sp = [' ' '\t']+
 
 rule read = parse
-    sp                          {read lexbuf}
+    eof                         {EOF}
+    | sp                        {read lexbuf}
     | float_constant as f       {FLOAT(float_of_string f)}
     | '('                       {LP}
     | ')'                       {RP}

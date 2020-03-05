@@ -29,6 +29,7 @@ type token =
   | DIV
   | EQ
   | DELIMITER
+  | EOF
 
 val main :
   (Lexing.lexbuf  -> token) -> Lexing.lexbuf -> Sheet.formula
