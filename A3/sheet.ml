@@ -1,8 +1,9 @@
-type sheet = float list list
 type index = INDICE of int * int
 type range = RANGE of index * index
+type value = FLOAT of float | UNDEFINED
+type sheet = value list list
 
-type token = COUNT | ROWCOUNT | COLCOUNT
+type tokens = COUNT | ROWCOUNT | COLCOUNT
            | SUM   | ROWSUM   | COLSUM
            | AVG   | ROWAVG   | COLAVG
            | MIN   | ROWMIN   | COLMIN
@@ -10,12 +11,12 @@ type token = COUNT | ROWCOUNT | COLCOUNT
            | ADD | SUBT | MULT | DIV
 
 type formula = 
-    UNARY of index * token * range
-  | BINARY1 of index * token * range * range
-  | BINARY2 of index * token * float * range
-  | BINARY3 of index * token * range * float
-  | BINARY4 of index * token * index * range
-  | BINARY5 of index * token * range * index
+    UNARY of index * tokens * range
+  | BINARY1 of index * tokens * range * range
+  | BINARY2 of index * tokens * float * range
+  | BINARY3 of index * tokens * range * float
+  | BINARY4 of index * tokens * index * range
+  | BINARY5 of index * tokens * range * index
 
 exception NotPossible
 exception InvalidRange
@@ -27,7 +28,7 @@ let isInvalidRange (r:range): bool = match r with
 
 let isIncompatibleRange (r1:range) (r2:range): bool = match r1 with 
     RANGE(INDICE(a1, a2), INDICE(b1, b2)) -> match r2 with
-      RANGE(INDICE(c1, c2), INDICE(d1, d2)) -> ((b1-a1) = (d1-c1)) && ((b2-a2) = (d2-c2));;
+        RANGE(INDICE(c1, c2), INDICE(d1, d2)) -> ((b1-a1) = (d1-c1)) && ((b2-a2) = (d2-c2));;
 
 let rec full_count (s:sheet) (r:range) (i:index): sheet = s;;
 let rec row_count (s:sheet) (r:range) (i:index): sheet = s;;
