@@ -1,5 +1,7 @@
 (* Header *)
 {
+    (* import tokens from parser rather than defining again *)
+    (* Added a token for eof *)
     open A3;;
     exception InvalidToken of char ;;
 }
@@ -12,10 +14,11 @@ let number = ('0' | ((digit_)digit*))
 (* Regex for floating constants *)
 let float_constant = ['+''-']?(number)['.']('0'|digit*(digit_))
 (* Regex for whitespace *)
-let sp = [' ' '\t']+
+let sp = [' ' '\t' '\n']+       (* Added newline *)
 
+(* removed "read lexbuf" as we don't require token list now, parser does this itself *)
 rule read = parse
-    eof                         {EOF}
+      eof                       {EOF}                       (* Added end of file *)
     | sp                        {read lexbuf}
     | float_constant as f       {FLOAT(float_of_string f)}
     | '('                       {LP}

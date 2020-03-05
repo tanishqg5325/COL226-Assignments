@@ -1,8 +1,10 @@
 type index = INDICE of int * int
 type range = RANGE of index * index
 type value = FLOAT of float | UNDEFINED
+(* A sheet can have both float as well as undefined values *)
 type sheet = value list list
 
+(* Unary and Binary Operator tokens *)
 type tokens = COUNT | ROWCOUNT | COLCOUNT
            | SUM   | ROWSUM   | COLSUM
            | AVG   | ROWAVG   | COLAVG
@@ -10,6 +12,7 @@ type tokens = COUNT | ROWCOUNT | COLCOUNT
            | MAX   | ROWMAX   | COLMAX
            | ADD | SUBT | MULT | DIV
 
+(* return type of parser *)
 type formula = 
     UNARY of index * tokens * range
   | BINARY1 of index * tokens * range * range
@@ -18,18 +21,22 @@ type formula =
   | BINARY4 of index * tokens * index * range
   | BINARY5 of index * tokens * range * index
 
+(* Exceptions *)
 exception NotPossible
 exception InvalidRange
 exception IncompatibleRange
 exception DivideByZero
 
+(* Function to check whether given range is valid or not *)
 let isInvalidRange (r:range): bool = match r with
     RANGE(INDICE(i1, j1), INDICE(i2, j2)) -> (i1 > i2) || (j1 > j2);;
 
+(* Function to check whether two ranges are compatible or not i.e. same number of rows and columns *)
 let isIncompatibleRange (r1:range) (r2:range): bool = match r1 with 
     RANGE(INDICE(a1, a2), INDICE(b1, b2)) -> match r2 with
-        RANGE(INDICE(c1, c2), INDICE(d1, d2)) -> ((b1-a1) = (d1-c1)) && ((b2-a2) = (d2-c2));;
+        RANGE(INDICE(c1, c2), INDICE(d1, d2)) -> ((b1-a1) <> (d1-c1)) || ((b2-a2) <> (d2-c2));;
 
+(* Backend *)
 let rec full_count (s:sheet) (r:range) (i:index): sheet = s;;
 let rec row_count (s:sheet) (r:range) (i:index): sheet = s;;
 let rec col_count (s:sheet) (r:range) (i:index): sheet = s;;
@@ -60,6 +67,8 @@ let rec subt_range (s:sheet) (r1:range) (r2:range) (i:index): sheet = s;;
 let rec mult_range (s:sheet) (r1:range) (r2:range) (i:index): sheet = s;;
 let rec div_range (s:sheet) (r1:range) (r2:range) (i:index): sheet = s;;
 
+
+(* Interpreter based on formulas returned by parser *)
 let eval (s:sheet) (f:formula): sheet = match f with
     UNARY(i_, t, r) -> (
       if (isInvalidRange r) then raise InvalidRange

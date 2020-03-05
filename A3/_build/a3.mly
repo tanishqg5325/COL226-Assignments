@@ -1,29 +1,54 @@
+/*
+    PARSER
+    - For making sense of info passed by lexer using a defined grammar
+    - Based on a basic CFG
+    - Returns the formula by parsing
+*/
+
 %{
     open Sheet;;
 %}
 
+/* DEFINING TOKENS. To be used in lexer */
+
+/* floating constants */
 %token <float> FLOAT
+/* index */
 %token <int * int> INDICE
+/* range */
 %token <Sheet.index * Sheet.index> RANGE
+/* other tokens */
 %token LP RP LB RB COMMA COLON COUNT ROWCOUNT COLCOUNT SUM ROWSUM COLSUM AVG ROWAVG COLAVG MIN ROWMIN COLMIN MAX ROWMAX COLMAX ADD SUBT MULT DIV EQ DELIMITER EOF
+
+/* STARTING GRAMMAR */
+/* Defining the start symbol for the grammar */
 %start main
+/* Referring to the return type as 'Sheet.formula' */
 %type <Sheet.formula> main
 %%
 
 main:
-  formulas EOF              {$1}
+  /* Main */
+  formulas DELIMITER EOF              {$1}
 ;
 
 formulas:
-    INDICE EQ unary RANGE DELIMITER           {UNARY(INDICE((fst $1),(snd $1)), $3, RANGE((fst $4),(snd $4)))}
-  | INDICE EQ binary RANGE RANGE DELIMITER    {BINARY1(INDICE((fst $1),(snd $1)), $3, RANGE((fst $4),(snd $4)), RANGE((fst $5),(snd $5)))}
-  | INDICE EQ binary FLOAT RANGE DELIMITER    {BINARY2(INDICE((fst $1),(snd $1)), $3, $4, RANGE((fst $5),(snd $5)))}
-  | INDICE EQ binary RANGE FLOAT DELIMITER    {BINARY3(INDICE((fst $1),(snd $1)), $3, RANGE((fst $4),(snd $4)), $5)}
-  | INDICE EQ binary INDICE RANGE DELIMITER   {BINARY4(INDICE((fst $1),(snd $1)), $3, INDICE((fst $4),(snd $4)), RANGE((fst $5),(snd $5)))}
-  | INDICE EQ binary RANGE INDICE DELIMITER   {BINARY5(INDICE((fst $1),(snd $1)), $3, RANGE((fst $4),(snd $4)), INDICE((fst $5),(snd $5)))}
+    /* I := FUNC R ; */
+    INDICE EQ unary RANGE           {UNARY(INDICE((fst $1),(snd $1)), $3, RANGE((fst $4),(snd $4)))}
+    /* I := FUNC R R ; */
+  | INDICE EQ binary RANGE RANGE    {BINARY1(INDICE((fst $1),(snd $1)), $3, RANGE((fst $4),(snd $4)), RANGE((fst $5),(snd $5)))}
+    /* I := FUNC C R ; */
+  | INDICE EQ binary FLOAT RANGE    {BINARY2(INDICE((fst $1),(snd $1)), $3, $4, RANGE((fst $5),(snd $5)))}
+    /* I := FUNC R C ; */
+  | INDICE EQ binary RANGE FLOAT    {BINARY3(INDICE((fst $1),(snd $1)), $3, RANGE((fst $4),(snd $4)), $5)}
+    /* I := FUNC I R ; */
+  | INDICE EQ binary INDICE RANGE   {BINARY4(INDICE((fst $1),(snd $1)), $3, INDICE((fst $4),(snd $4)), RANGE((fst $5),(snd $5)))}
+    /* I := FUNC R I ; */
+  | INDICE EQ binary RANGE INDICE   {BINARY5(INDICE((fst $1),(snd $1)), $3, RANGE((fst $4),(snd $4)), INDICE((fst $5),(snd $5)))}
 ;
 
 unary:
+    /* Unary Operators */
     COUNT         {COUNT}
   | ROWCOUNT      {ROWCOUNT}
   | COLCOUNT      {COLCOUNT}
@@ -42,6 +67,7 @@ unary:
 ;
 
 binary:
+    /* Binary Operators */
     ADD           {ADD}
   | SUBT          {SUBT}
   | MULT          {MULT}
