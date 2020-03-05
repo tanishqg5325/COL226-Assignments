@@ -5,12 +5,16 @@
 %token <float> FLOAT
 %token <int * int> INDICE
 %token <Sheet.index * Sheet.index> RANGE
-%token LP RP LB RB COMMA COLON COUNT ROWCOUNT COLCOUNT SUM ROWSUM COLSUM AVG ROWAVG COLAVG MIN ROWMIN COLMIN MAX ROWMAX COLMAX ADD SUBT MULT DIV EQ DELIMITER
+%token LP RP LB RB COMMA COLON COUNT ROWCOUNT COLCOUNT SUM ROWSUM COLSUM AVG ROWAVG COLAVG MIN ROWMIN COLMIN MAX ROWMAX COLMAX ADD SUBT MULT DIV EQ DELIMITER EOF
 %start main
 %type <Sheet.formula> main
 %%
 
 main:
+  formulas EOF              {$1}
+;
+
+formulas:
     INDICE EQ unary RANGE DELIMITER           {UNARY(INDICE((fst $1),(snd $1)), $3, RANGE((fst $4),(snd $4)))}
   | INDICE EQ binary RANGE RANGE DELIMITER    {BINARY1(INDICE((fst $1),(snd $1)), $3, RANGE((fst $4),(snd $4)), RANGE((fst $5),(snd $5)))}
   | INDICE EQ binary FLOAT RANGE DELIMITER    {BINARY2(INDICE((fst $1),(snd $1)), $3, $4, RANGE((fst $5),(snd $5)))}
