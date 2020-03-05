@@ -7,6 +7,4 @@ open A2;;
 open A3;;
 open Sheet;;
 
-let parser s = A3.main A2.read (Lexing.from_string s);;
-
-parser "[0,5]:= COLCOUNT ([0,4]:[2,4]) 10.0;";;
+A3.main A2.read (Lexing.from_string "[0,3]:=MULT ([1, 4] : [4, 6]) 10.0;");;
