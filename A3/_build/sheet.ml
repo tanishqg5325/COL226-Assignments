@@ -6,20 +6,18 @@ type sheet = value list list
 
 (* Unary and Binary Operator tokens *)
 type tokens = COUNT | ROWCOUNT | COLCOUNT
-           | SUM   | ROWSUM   | COLSUM
-           | AVG   | ROWAVG   | COLAVG
-           | MIN   | ROWMIN   | COLMIN
-           | MAX   | ROWMAX   | COLMAX
-           | ADD | SUBT | MULT | DIV
+            | SUM   | ROWSUM   | COLSUM
+            | AVG   | ROWAVG   | COLAVG
+            | MIN   | ROWMIN   | COLMIN
+            | MAX   | ROWMAX   | COLMAX
+            | ADD | SUBT | MULT | DIV
 
 (* return type of parser *)
 type formula = 
     UNARY of index * tokens * range
   | BINARY1 of index * tokens * range * range
   | BINARY2 of index * tokens * float * range
-  | BINARY3 of index * tokens * range * float
-  | BINARY4 of index * tokens * index * range
-  | BINARY5 of index * tokens * range * index
+  | BINARY3 of index * tokens * index * range
 
 (* Exceptions *)
 exception NotPossible
@@ -67,6 +65,35 @@ let rec subt_range (s:sheet) (r1:range) (r2:range) (i:index): sheet = s;;
 let rec mult_range (s:sheet) (r1:range) (r2:range) (i:index): sheet = s;;
 let rec div_range (s:sheet) (r1:range) (r2:range) (i:index): sheet = s;;
 
+(* function which returns the value at given index in given sheet *)
+let rec getValueAtIndex (s:sheet) (i:index): value =
+    match s with
+        [] -> UNDEFINED
+      | x::xs -> match x with
+                    [] -> UNDEFINED
+                  | y::ys ->  match i with INDICE(i, j) ->
+                                if(i = 0 && j = 0) then y
+                                else if(i = 0) then getValueAtIndex (ys::xs) (INDICE(i, j-1))
+                                else getValueAtIndex xs (INDICE(i-1, j))
+    ;;
+
+(* Function to fill cells between i1 and i2 of a row of a sheet with value = undefined *)
+let rec fillRowWithUndefined (s:value list) (i1:int) (i2:int): value list =
+    match s with
+        [] -> []
+      | x::xs -> if i1 > 0 then x::(fillRowWithUndefined xs (i1-1) (i2-1))
+                 else if i2 < 0 then s
+                 else UNDEFINED::fillRowWithUndefined xs 0 (i2-1);;
+
+
+(* Function to fill given range in given sheet with value = undefined *)
+let rec fillRangeWithUndefined (s:sheet) (r:range): sheet =
+    match s with
+        [] -> []
+      | x::xs -> match r with RANGE(INDICE(i1, j1), INDICE(i2, j2)) ->
+          if i1 > 0 then x::fillRangeWithUndefined xs (RANGE(INDICE(i1-1, j1), INDICE(i2-1, j2)))
+          else if i2 < 0 then s
+          else (fillRowWithUndefined x j1 j2)::fillRangeWithUndefined xs (RANGE(INDICE(0, j1), INDICE(i2-1, j2)));;
 
 (* Interpreter based on formulas returned by parser *)
 let eval (s:sheet) (f:formula): sheet = match f with
@@ -101,18 +128,8 @@ let eval (s:sheet) (f:formula): sheet = match f with
         | DIV   -> div_range s r1 r2 i_
         | _     -> raise NotPossible
     )
-  
-  | BINARY2(i_, t, c, r) -> (
-      if (isInvalidRange r) then raise InvalidRange
-      else match t with
-          ADD   -> add_const s r c i_
-        | SUBT  -> s
-        | MULT  -> mult_const s r c i_
-        | DIV   -> s
-        | _     -> raise NotPossible
-    )
 
-  | BINARY3(i_, t, r, c) -> (
+  | BINARY2(i_, t, c, r) -> (
       if (isInvalidRange r) then raise InvalidRange
       else match t with
           ADD   -> add_const s r c i_
@@ -122,23 +139,19 @@ let eval (s:sheet) (f:formula): sheet = match f with
         | _     -> raise NotPossible
     )
 
-  | BINARY4(i_, t, i, r) -> (
+  | BINARY3(i_, t, i, r) -> (
       if (isInvalidRange r) then raise InvalidRange
-      else match t with
-          ADD   -> s
-        | SUBT  -> s
-        | MULT  -> s
-        | DIV   -> s
-        | _     -> raise NotPossible
-    )
-
-  | BINARY5(i_, t, r, i) -> (
-      if (isInvalidRange r) then raise InvalidRange
-      else match t with
-          ADD   -> s
-        | SUBT  -> s
-        | MULT  -> s
-        | DIV   -> s
-        | _     -> raise NotPossible
+      else match (getValueAtIndex s i) with
+          UNDEFINED -> (
+            match r with RANGE(INDICE(ir1, jr1), INDICE(ir2, jr2)) ->
+            match i_ with INDICE(i0, j0) ->
+              fillRangeWithUndefined s (RANGE(i_, INDICE(i0+ir2-ir1, j0+jr2-jr1)))  
+          )
+        | FLOAT(c)  -> match t with
+                          ADD   -> add_const s r c i_
+                        | SUBT  -> subt_const s r c i_
+                        | MULT  -> mult_const s r c i_
+                        | DIV   -> div_const s r c i_
+                        | _     -> raise NotPossible
     )
 ;;

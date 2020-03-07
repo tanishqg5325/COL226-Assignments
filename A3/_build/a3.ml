@@ -207,7 +207,7 @@ let yyact = [|
     let _5 = (Parsing.peek_val __caml_parser_env 0 : float) in
     Obj.repr(
 # 43 "a3.mly"
-                                    (BINARY3(INDICE((fst _1),(snd _1)), _3, RANGE((fst _4),(snd _4)), _5))
+                                    (BINARY2(INDICE((fst _1),(snd _1)), _3, _5, RANGE((fst _4),(snd _4))))
 # 212 "a3.ml"
                : 'formulas))
 ; (fun __caml_parser_env ->
@@ -217,7 +217,7 @@ let yyact = [|
     let _5 = (Parsing.peek_val __caml_parser_env 0 : Sheet.index * Sheet.index) in
     Obj.repr(
 # 45 "a3.mly"
-                                    (BINARY4(INDICE((fst _1),(snd _1)), _3, INDICE((fst _4),(snd _4)), RANGE((fst _5),(snd _5))))
+                                    (BINARY3(INDICE((fst _1),(snd _1)), _3, INDICE((fst _4),(snd _4)), RANGE((fst _5),(snd _5))))
 # 222 "a3.ml"
                : 'formulas))
 ; (fun __caml_parser_env ->
@@ -227,7 +227,7 @@ let yyact = [|
     let _5 = (Parsing.peek_val __caml_parser_env 0 : int * int) in
     Obj.repr(
 # 47 "a3.mly"
-                                    (BINARY5(INDICE((fst _1),(snd _1)), _3, RANGE((fst _4),(snd _4)), INDICE((fst _5),(snd _5))))
+                                    (BINARY3(INDICE((fst _1),(snd _1)), _3, INDICE((fst _5),(snd _5)), RANGE((fst _4),(snd _4))))
 # 232 "a3.ml"
                : 'formulas))
 ; (fun __caml_parser_env ->

@@ -40,11 +40,11 @@ formulas:
     /* I := FUNC C R ; */
   | INDICE EQ binary FLOAT RANGE    {BINARY2(INDICE((fst $1),(snd $1)), $3, $4, RANGE((fst $5),(snd $5)))}
     /* I := FUNC R C ; */
-  | INDICE EQ binary RANGE FLOAT    {BINARY3(INDICE((fst $1),(snd $1)), $3, RANGE((fst $4),(snd $4)), $5)}
+  | INDICE EQ binary RANGE FLOAT    {BINARY2(INDICE((fst $1),(snd $1)), $3, $5, RANGE((fst $4),(snd $4)))}
     /* I := FUNC I R ; */
-  | INDICE EQ binary INDICE RANGE   {BINARY4(INDICE((fst $1),(snd $1)), $3, INDICE((fst $4),(snd $4)), RANGE((fst $5),(snd $5)))}
+  | INDICE EQ binary INDICE RANGE   {BINARY3(INDICE((fst $1),(snd $1)), $3, INDICE((fst $4),(snd $4)), RANGE((fst $5),(snd $5)))}
     /* I := FUNC R I ; */
-  | INDICE EQ binary RANGE INDICE   {BINARY5(INDICE((fst $1),(snd $1)), $3, RANGE((fst $4),(snd $4)), INDICE((fst $5),(snd $5)))}
+  | INDICE EQ binary RANGE INDICE   {BINARY3(INDICE((fst $1),(snd $1)), $3, INDICE((fst $5),(snd $5)), RANGE((fst $4),(snd $4)))}
 ;
 
 unary:

@@ -65,6 +65,7 @@ let rec subt_range (s:sheet) (r1:range) (r2:range) (i:index): sheet = s;;
 let rec mult_range (s:sheet) (r1:range) (r2:range) (i:index): sheet = s;;
 let rec div_range (s:sheet) (r1:range) (r2:range) (i:index): sheet = s;;
 
+(* function which returns the value at given index in given sheet *)
 let rec getValueAtIndex (s:sheet) (i:index): value =
     match s with
         [] -> UNDEFINED
@@ -76,6 +77,7 @@ let rec getValueAtIndex (s:sheet) (i:index): value =
                                 else getValueAtIndex xs (INDICE(i-1, j))
     ;;
 
+(* Function to fill cells between i1 and i2 of a row of a sheet with value = undefined *)
 let rec fillRowWithUndefined (s:value list) (i1:int) (i2:int): value list =
     match s with
         [] -> []
@@ -84,6 +86,7 @@ let rec fillRowWithUndefined (s:value list) (i1:int) (i2:int): value list =
                  else UNDEFINED::fillRowWithUndefined xs 0 (i2-1);;
 
 
+(* Function to fill given range in given sheet with value = undefined *)
 let rec fillRangeWithUndefined (s:sheet) (r:range): sheet =
     match s with
         [] -> []
