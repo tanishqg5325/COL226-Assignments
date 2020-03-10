@@ -30,5 +30,5 @@ full_ans t (RANGE(INDICE(0, 0), INDICE(2, 2))) max (-189.);;
 
 writeCol (expandSheet t 4 3) (INDICE(1, 1)) [2.8; 50.];;
 
-let fo = A3.main A2.read (Lexing.from_string "[2,3]:=SUM ([0, 0] : [2, 2]);\n");;
+let fo = A3.main A2.read (Lexing.from_string "[1,3]:=ROWSUM ([0, 0] : [2, 2]);\n");;
 eval t fo;;

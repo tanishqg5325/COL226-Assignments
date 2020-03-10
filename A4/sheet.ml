@@ -161,7 +161,17 @@ let rec full_sum (s:sheet) (r:range) (i_:index): sheet =
         writeCell (expandSheet s new_h new_l) i_ ans
       else writeCell s i_ ans;;
 
-let rec row_sum (s:sheet) (r:range) (i:index): sheet = s;;
+let rec row_sum (s:sheet) (r:range) (i_:index): sheet =
+  let f a b = a +. b in 
+    let ans = row_ans s r f 0. in
+    match i_ with INDICE(i, j) ->
+      match r with RANGE(INDICE(i1, _), INDICE(i2, _)) ->
+      if i+i2-i1 >= List.length s || j >= List.length (List.hd s) then 
+        let new_h = max (i+i2-i1+1) (List.length s) in
+        let new_l = max (j+1) (List.length (List.hd s)) in
+        writeCol (expandSheet s new_h new_l) i_ ans
+      else writeCol s i_ ans;;
+
 let rec col_sum (s:sheet) (r:range) (i:index): sheet = s;;
 
 let rec full_avg (s:sheet) (r:range) (i:index): sheet = s;;
