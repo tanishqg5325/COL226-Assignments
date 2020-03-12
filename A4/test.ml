@@ -22,7 +22,7 @@ eval s f3;;
 eval s f4;;
 eval s f5;;
 
-let t = [[FLOAT(4.1); FLOAT(1.2); UNDEFINED]; [FLOAT(-10.9); FLOAT(1.7); FLOAT(2.3)]; [FLOAT(-1.4); FLOAT(4.5); FLOAT(3.2)]];;
+let t = [[FLOAT(4.1); FLOAT(1.2); FLOAT(5.2)]; [FLOAT(-10.9); FLOAT(1.7); FLOAT(2.3)]; [FLOAT(-1.4); FLOAT(4.5); FLOAT(3.2)]];;
 fillRangeWithUndefined t (RANGE(INDICE(0, 0), INDICE(1, 3)));;
 
 let f a b = a +. b;;
@@ -30,5 +30,5 @@ full_ans t (RANGE(INDICE(0, 0), INDICE(2, 2))) max (-189.);;
 
 writeCol (expandSheet t 4 3) (INDICE(1, 1)) [2.8; 50.];;
 
-let fo = A3.main A2.read (Lexing.from_string "[4, 0] := COLCOUNT ([0, 0] : [4, 4]);");;
+let fo = A3.main A2.read (Lexing.from_string "[0, 0] := MULT ([0, 0] : [2, 2]) 2.0;");;
 eval t fo;;
