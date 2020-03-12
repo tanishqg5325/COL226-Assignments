@@ -442,10 +442,71 @@ let rec div_const (s:sheet) (r:range) (c:float) (i_:index): sheet =
       writeRange (expandSheet s new_h new_l) i_ ans
     else writeRange s i_ ans;;
 
-let rec add_range (s:sheet) (r1:range) (r2:range) (i_:index): sheet = s;;
-let rec subt_range (s:sheet) (r1:range) (r2:range) (i_:index): sheet = s;;
-let rec mult_range (s:sheet) (r1:range) (r2:range) (i_:index): sheet = s;;
-let rec div_range (s:sheet) (r1:range) (r2:range) (i_:index): sheet = s;;
+let rec applyOperation (c1:float list list) (c2:float list list) f: float list list =
+  match c1 with
+      [] -> []
+    | x::xs ->
+        let rec rowUtil (c1:float list) (c2:float list): float list =
+          match c1 with
+              [] -> []
+            | y::ys -> (f y (List.hd c2))::rowUtil ys (List.tl c2)
+        in (rowUtil x (List.hd c2))::applyOperation xs (List.tl c2) f;;
+
+let rec add_range (s:sheet) (r1:range) (r2:range) (i_:index): sheet =
+  let f a b = a +. b in
+  let g a b = a +. b in
+  let f1 = full_range_ans s r1 0. f in
+  let f2 = full_range_ans s r2 0. f in
+  let ans = applyOperation f1 f2 g in
+  match i_ with INDICE(i, j) ->
+    match r1 with RANGE(INDICE(i1, j1), INDICE(i2, j2)) ->
+    if i+i2-i1 >= List.length s || j+j2-j1 >= List.length (List.hd s) then
+      let new_h = max (i+i2-i1+1) (List.length s) in
+      let new_l = max (j+j2-j1+1) (List.length (List.hd s)) in
+      writeRange (expandSheet s new_h new_l) i_ ans
+    else writeRange s i_ ans;;
+
+let rec subt_range (s:sheet) (r1:range) (r2:range) (i_:index): sheet =
+  let f a b = a +. b in
+  let g a b = a -. b in
+  let f1 = full_range_ans s r1 0. f in
+  let f2 = full_range_ans s r2 0. f in
+  let ans = applyOperation f1 f2 g in
+  match i_ with INDICE(i, j) ->
+    match r1 with RANGE(INDICE(i1, j1), INDICE(i2, j2)) ->
+    if i+i2-i1 >= List.length s || j+j2-j1 >= List.length (List.hd s) then
+      let new_h = max (i+i2-i1+1) (List.length s) in
+      let new_l = max (j+j2-j1+1) (List.length (List.hd s)) in
+      writeRange (expandSheet s new_h new_l) i_ ans
+    else writeRange s i_ ans;;
+
+let rec mult_range (s:sheet) (r1:range) (r2:range) (i_:index): sheet =
+  let f a b = a +. b in
+  let g a b = a *. b in
+  let f1 = full_range_ans s r1 0. f in
+  let f2 = full_range_ans s r2 0. f in
+  let ans = applyOperation f1 f2 g in
+  match i_ with INDICE(i, j) ->
+    match r1 with RANGE(INDICE(i1, j1), INDICE(i2, j2)) ->
+    if i+i2-i1 >= List.length s || j+j2-j1 >= List.length (List.hd s) then
+      let new_h = max (i+i2-i1+1) (List.length s) in
+      let new_l = max (j+j2-j1+1) (List.length (List.hd s)) in
+      writeRange (expandSheet s new_h new_l) i_ ans
+    else writeRange s i_ ans;;
+
+let rec div_range (s:sheet) (r1:range) (r2:range) (i_:index): sheet =
+  let f a b = a +. b in
+  let g a b = a /. b in
+  let f1 = full_range_ans s r1 0. f in
+  let f2 = full_range_ans s r2 0. f in
+  let ans = applyOperation f1 f2 g in
+  match i_ with INDICE(i, j) ->
+    match r1 with RANGE(INDICE(i1, j1), INDICE(i2, j2)) ->
+    if i+i2-i1 >= List.length s || j+j2-j1 >= List.length (List.hd s) then
+      let new_h = max (i+i2-i1+1) (List.length s) in
+      let new_l = max (j+j2-j1+1) (List.length (List.hd s)) in
+      writeRange (expandSheet s new_h new_l) i_ ans
+    else writeRange s i_ ans;;
 
 (* function which returns the value at given index in given sheet *)
 let rec getValueAtIndex (s:sheet) (i:index): value =
@@ -457,24 +518,6 @@ let rec getValueAtIndex (s:sheet) (i:index): value =
                                 if(i = 0 && j = 0) then y
                                 else if(i = 0) then getValueAtIndex (ys::xs) (INDICE(i, j-1))
                                 else getValueAtIndex xs (INDICE(i-1, j));;
-
-(* Function to fill cells between i1 and i2 of a row of a sheet with value = undefined *)
-let rec fillRowWithUndefined (s:value list) (i1:int) (i2:int): value list =
-    match s with
-        [] -> []
-      | x::xs -> if i1 > 0 then x::(fillRowWithUndefined xs (i1-1) (i2-1))
-                 else if i2 < 0 then s
-                 else UNDEFINED::fillRowWithUndefined xs 0 (i2-1);;
-
-
-(* Function to fill given range in given sheet with value = undefined *)
-let rec fillRangeWithUndefined (s:sheet) (r:range): sheet =
-    match s with
-        [] -> []
-      | x::xs -> match r with RANGE(INDICE(i1, j1), INDICE(i2, j2)) ->
-          if i1 > 0 then x::fillRangeWithUndefined xs (RANGE(INDICE(i1-1, j1), INDICE(i2-1, j2)))
-          else if i2 < 0 then s
-          else (fillRowWithUndefined x j1 j2)::fillRangeWithUndefined xs (RANGE(INDICE(0, j1), INDICE(i2-1, j2)));;
 
 (* Interpreter based on formulas returned by parser *)
 let eval (s:sheet) (f:formula): sheet = match f with
@@ -523,11 +566,7 @@ let eval (s:sheet) (f:formula): sheet = match f with
   | BINARY3(i_, t, i, r) -> (
       if (isInvalidRange r) then raise InvalidRange
       else match (getValueAtIndex s i) with
-          UNDEFINED -> (
-            match r with RANGE(INDICE(ir1, jr1), INDICE(ir2, jr2)) ->
-            match i_ with INDICE(i0, j0) ->
-              fillRangeWithUndefined s (RANGE(i_, INDICE(i0+ir2-ir1, j0+jr2-jr1)))  
-          )
+          UNDEFINED -> raise EmptyCell
         | FLOAT(c)  -> match t with
                           ADD   -> add_const s r c i_
                         | SUBT  -> subt_const s r c i_
