@@ -24,8 +24,7 @@ exception NotPossible
 exception InvalidRange
 exception IncompatibleRange
 exception DivideByZero
-exception RangeNotInSheet
-exception CellNotInitialized
+exception EmptyCell
 
 (* Function to check whether given range is valid or not *)
 let isInvalidRange (r:range): bool = match r with
@@ -40,7 +39,7 @@ let rec full_ans (s:sheet) (r:range) f (e:float): float =
   match s with
       [] -> (
         match r with RANGE(i, INDICE(i2, _)) ->
-          if i2 < 0 then e else raise RangeNotInSheet
+          if i2 < 0 then e else raise EmptyCell
       )
     | x::xs ->
         match r with RANGE(INDICE(i1, j1), INDICE(i2, j2)) ->
@@ -49,19 +48,19 @@ let rec full_ans (s:sheet) (r:range) f (e:float): float =
           else
             let rec full_row_ans (v:value list) (i1:int) (i2:int): float =
                 match v with 
-                    [] -> if i2 < 0 then e else raise RangeNotInSheet
+                    [] -> if i2 < 0 then e else raise EmptyCell
                   | y::ys -> if i1 > 0 then full_row_ans ys (i1-1) (i2-1)
                             else if i2 < 0 then e
                             else match y with
                                 FLOAT(c) -> f c (full_row_ans ys 0 (i2-1))
-                              | UNDEFINED -> raise CellNotInitialized
+                              | UNDEFINED -> raise EmptyCell
             in f (full_row_ans x j1 j2) (full_ans xs (RANGE(INDICE(0, j1), INDICE(i2-1, j2))) f e);;
 
 let rec row_ans (s:sheet) (r:range) f (e:float): float list =
   match s with
       [] -> (
         match r with RANGE(i, INDICE(i2, _)) ->
-          if i2 < 0 then [] else raise RangeNotInSheet
+          if i2 < 0 then [] else raise EmptyCell
       )
     | x::xs ->
         match r with RANGE(INDICE(i1, j1), INDICE(i2, j2)) ->
@@ -70,21 +69,20 @@ let rec row_ans (s:sheet) (r:range) f (e:float): float list =
           else
             let rec full_row_ans (v:value list) (i1:int) (i2:int): float =
               match v with
-                  [] -> if i2 < 0 then e else raise RangeNotInSheet
+                  [] -> if i2 < 0 then e else raise EmptyCell
                 | y::ys -> if i1 > 0 then full_row_ans ys (i1-1) (i2-1)
                           else if i2 < 0 then e
                           else match y with
                               FLOAT(c) -> f c (full_row_ans ys 0 (i2-1))
-                            | UNDEFINED -> raise CellNotInitialized
+                            | UNDEFINED -> raise EmptyCell
             in (full_row_ans x j1 j2)::row_ans xs (RANGE(INDICE(0, j1), INDICE(i2-1, j2))) f e;;
 
-let rec mkzerov (n:int) (e:float): float list = if n = 0 then [] else e::mkzerov (n-1) e;;
-
 let rec col_ans (s:sheet) (r:range) f (e:float): float list =
-    match s with
+  let rec mkzerov (n:int) (e:float): float list = if n = 0 then [] else e::mkzerov (n-1) e
+  in match s with
         [] -> (
           match r with RANGE(INDICE(i1, j1), INDICE(i2, j2)) ->
-            if i2 < 0 then (mkzerov (j2-j1+1) e) else raise RangeNotInSheet
+            if i2 < 0 then (mkzerov (j2-j1+1) e) else raise EmptyCell
         )
       | x::xs ->
           match r with RANGE(INDICE(i1, j1), INDICE(i2, j2)) ->
@@ -92,13 +90,13 @@ let rec col_ans (s:sheet) (r:range) f (e:float): float list =
             else if i2 < 0 then (mkzerov (j2-j1+1) e)
             else
               let rec merge (v1:value list) (v2:float list) (i1:int) (i2:int): float list =
-                  if i1 > 0 then merge v1 v2 (i1-1) (i2-1)
-                  else if i2 < 0 then []
-                  else match v1 with 
-                      [] -> raise RangeNotInSheet
-                    | v::vs -> match v with
-                          FLOAT(c) -> (f c (List.hd v2))::merge vs (List.tl v2) 0 (i2-1)
-                        | UNDEFINED -> raise CellNotInitialized
+                if i1 > 0 then merge v1 v2 (i1-1) (i2-1)
+                else if i2 < 0 then []
+                else match v1 with 
+                    [] -> raise EmptyCell
+                  | v::vs -> match v with
+                        FLOAT(c) -> (f c (List.hd v2))::merge vs (List.tl v2) 0 (i2-1)
+                      | UNDEFINED -> raise EmptyCell
               in merge x (col_ans xs (RANGE(INDICE(0, j1), INDICE(i2-1, j2))) f e) j1 j2;;
 
 let rec expandSheet (s:sheet) (h:int) (l:int): sheet =
@@ -109,22 +107,22 @@ let rec expandSheet (s:sheet) (h:int) (l:int): sheet =
                  else (x @ (makeUndefinedRow (l-(List.length x))))::expandSheet xs (h-1) l;;
 
 let rec writeCell (s:sheet) (i_:index) (c:float): sheet =
-    match i_ with INDICE(i, j) ->
-      match s with
-          [] -> []
-        | x::xs ->
-            if i > 0 then x::writeCell xs (INDICE(i-1, j)) c
-            else
-              let rec colWriteCell (v:value list) (j:int): value list =
-                if j = 0 then FLOAT(c)::(List.tl v)
-                else (List.hd v)::colWriteCell (List.tl v) (j-1)
-              in (colWriteCell x j)::xs;;
+  match s with
+      [] -> []
+    | x::xs ->
+        match i_ with INDICE(i, j) ->
+          if i > 0 then x::writeCell xs (INDICE(i-1, j)) c
+          else
+            let rec colWriteCell (v:value list) (j:int): value list =
+              if j = 0 then FLOAT(c)::(List.tl v)
+              else (List.hd v)::colWriteCell (List.tl v) (j-1)
+            in (colWriteCell x j)::xs;;
 
 let rec writeRow (s:sheet) (i_:index) (c:float list): sheet =
-  match i_ with INDICE(i, j) ->
-    match s with
-        [] -> []
-      | x::xs ->
+  match s with
+      [] -> []
+    | x::xs ->
+        match i_ with INDICE(i, j) ->
           if i > 0 then x::writeRow xs (INDICE(i-1, j)) c
           else
             let rec writeRowUtil (v:value list) (j:int) (c:float list): value list =
@@ -152,25 +150,25 @@ let rec row_count (s:sheet) (r:range) (i:index): sheet = s;;
 let rec col_count (s:sheet) (r:range) (i:index): sheet = s;;
 
 let rec full_sum (s:sheet) (r:range) (i_:index): sheet = 
-    let f a b = a +. b in 
-    let ans = full_ans s r f 0. in
-    match i_ with INDICE(i, j) ->
-      if i >= List.length s || j >= List.length (List.hd s) then 
-        let new_h = max (i+1) (List.length s) in
-        let new_l = max (j+1) (List.length (List.hd s)) in
-        writeCell (expandSheet s new_h new_l) i_ ans
-      else writeCell s i_ ans;;
+  let f a b = a +. b in
+  let ans = full_ans s r f 0. in
+  match i_ with INDICE(i, j) ->
+    if i >= List.length s || j >= List.length (List.hd s) then 
+      let new_h = max (i+1) (List.length s) in
+      let new_l = max (j+1) (List.length (List.hd s)) in
+      writeCell (expandSheet s new_h new_l) i_ ans
+    else writeCell s i_ ans;;
 
 let rec row_sum (s:sheet) (r:range) (i_:index): sheet =
   let f a b = a +. b in 
-    let ans = row_ans s r f 0. in
-    match i_ with INDICE(i, j) ->
-      match r with RANGE(INDICE(i1, _), INDICE(i2, _)) ->
-      if i+i2-i1 >= List.length s || j >= List.length (List.hd s) then
-        let new_h = max (i+i2-i1+1) (List.length s) in
-        let new_l = max (j+1) (List.length (List.hd s)) in
-        writeCol (expandSheet s new_h new_l) i_ ans
-      else writeCol s i_ ans;;
+  let ans = row_ans s r f 0. in
+  match i_ with INDICE(i, j) ->
+    match r with RANGE(INDICE(i1, _), INDICE(i2, _)) ->
+    if i+i2-i1 >= List.length s || j >= List.length (List.hd s) then
+      let new_h = max (i+i2-i1+1) (List.length s) in
+      let new_l = max (j+1) (List.length (List.hd s)) in
+      writeCol (expandSheet s new_h new_l) i_ ans
+    else writeCol s i_ ans;;
 
 let rec col_sum (s:sheet) (r:range) (i_:index): sheet =
   let f a b = a +. b in 
@@ -183,17 +181,106 @@ let rec col_sum (s:sheet) (r:range) (i_:index): sheet =
       writeRow (expandSheet s new_h new_l) i_ ans
     else writeRow s i_ ans;;
 
-let rec full_avg (s:sheet) (r:range) (i_:index): sheet = s;;
-let rec row_avg (s:sheet) (r:range) (i_:index): sheet = s;;
-let rec col_avg (s:sheet) (r:range) (i_:index): sheet = s;;
+let rec full_avg (s:sheet) (r:range) (i_:index): sheet =
+  match r with RANGE(INDICE(i1, j1), INDICE(i2, j2)) ->
+  let f a b = a +. b in
+  let ans = (full_ans s r f 0.) /. ((float_of_int (i2-i1+1)) *. (float_of_int (j2-j1+1))) in
+  match i_ with INDICE(i, j) ->
+    if i >= List.length s || j >= List.length (List.hd s) then 
+      let new_h = max (i+1) (List.length s) in
+      let new_l = max (j+1) (List.length (List.hd s)) in
+      writeCell (expandSheet s new_h new_l) i_ ans
+    else writeCell s i_ ans;;
 
-let rec full_min (s:sheet) (r:range) (i_:index): sheet = s;;
-let rec row_min (s:sheet) (r:range) (i_:index): sheet = s;;
-let rec col_min (s:sheet) (r:range) (i_:index): sheet = s;;
+let rec divideList (v:float list) (c:float): float list = match v with
+    [] -> []
+  | x::xs -> (x /. c)::divideList xs c
 
-let rec full_max (s:sheet) (r:range) (i_:index): sheet = s;;
-let rec row_max (s:sheet) (r:range) (i_:index): sheet = s;;
-let rec col_max (s:sheet) (r:range) (i_:index): sheet = s;;
+let rec row_avg (s:sheet) (r:range) (i_:index): sheet =
+  match r with RANGE(INDICE(i1, j1), INDICE(i2, j2)) ->
+  let f a b = a +. b in
+  let ans = divideList (row_ans s r f 0.) (float_of_int (j2-j1+1)) in
+  match i_ with INDICE(i, j) ->
+    if i+i2-i1 >= List.length s || j >= List.length (List.hd s) then
+      let new_h = max (i+i2-i1+1) (List.length s) in
+      let new_l = max (j+1) (List.length (List.hd s)) in
+      writeCol (expandSheet s new_h new_l) i_ ans
+    else writeCol s i_ ans;;
+
+let rec col_avg (s:sheet) (r:range) (i_:index): sheet =
+  match r with RANGE(INDICE(i1, j1), INDICE(i2, j2)) ->
+  let f a b = a +. b in
+  let ans = divideList (col_ans s r f 0.) (float_of_int (i2-i1+1)) in
+  match i_ with INDICE(i, j) ->
+    if i >= List.length s || j+j2-j1 >= List.length (List.hd s) then
+      let new_h = max (i+1) (List.length s) in
+      let new_l = max (j+j2-j1+1) (List.length (List.hd s)) in
+      writeRow (expandSheet s new_h new_l) i_ ans
+    else writeRow s i_ ans;;
+
+let rec full_min (s:sheet) (r:range) (i_:index): sheet =
+  let f a b = (min a b) in
+  let ans = full_ans s r f max_float in
+  match i_ with INDICE(i, j) ->
+    if i >= List.length s || j >= List.length (List.hd s) then 
+      let new_h = max (i+1) (List.length s) in
+      let new_l = max (j+1) (List.length (List.hd s)) in
+      writeCell (expandSheet s new_h new_l) i_ ans
+    else writeCell s i_ ans;;
+
+let rec row_min (s:sheet) (r:range) (i_:index): sheet =
+  let f a b = (min a b) in 
+  let ans = row_ans s r f max_float in
+  match i_ with INDICE(i, j) ->
+    match r with RANGE(INDICE(i1, _), INDICE(i2, _)) ->
+    if i+i2-i1 >= List.length s || j >= List.length (List.hd s) then
+      let new_h = max (i+i2-i1+1) (List.length s) in
+      let new_l = max (j+1) (List.length (List.hd s)) in
+      writeCol (expandSheet s new_h new_l) i_ ans
+    else writeCol s i_ ans;;
+
+let rec col_min (s:sheet) (r:range) (i_:index): sheet =
+  let f a b = (min a b) in 
+  let ans = col_ans s r f max_float in
+  match i_ with INDICE(i, j) ->
+    match r with RANGE(INDICE(_, j1), INDICE(_, j2)) ->
+    if i >= List.length s || j+j2-j1 >= List.length (List.hd s) then
+      let new_h = max (i+1) (List.length s) in
+      let new_l = max (j+j2-j1+1) (List.length (List.hd s)) in
+      writeRow (expandSheet s new_h new_l) i_ ans
+    else writeRow s i_ ans;;
+
+let rec full_max (s:sheet) (r:range) (i_:index): sheet =
+  let f a b = (max a b) in
+  let ans = full_ans s r f min_float in
+  match i_ with INDICE(i, j) ->
+    if i >= List.length s || j >= List.length (List.hd s) then 
+      let new_h = max (i+1) (List.length s) in
+      let new_l = max (j+1) (List.length (List.hd s)) in
+      writeCell (expandSheet s new_h new_l) i_ ans
+    else writeCell s i_ ans;;
+
+let rec row_max (s:sheet) (r:range) (i_:index): sheet =
+  let f a b = (max a b) in 
+  let ans = row_ans s r f min_float in
+  match i_ with INDICE(i, j) ->
+    match r with RANGE(INDICE(i1, _), INDICE(i2, _)) ->
+    if i+i2-i1 >= List.length s || j >= List.length (List.hd s) then
+      let new_h = max (i+i2-i1+1) (List.length s) in
+      let new_l = max (j+1) (List.length (List.hd s)) in
+      writeCol (expandSheet s new_h new_l) i_ ans
+    else writeCol s i_ ans;;
+
+let rec col_max (s:sheet) (r:range) (i_:index): sheet =
+  let f a b = (max a b) in 
+  let ans = col_ans s r f min_float in
+  match i_ with INDICE(i, j) ->
+    match r with RANGE(INDICE(_, j1), INDICE(_, j2)) ->
+    if i >= List.length s || j+j2-j1 >= List.length (List.hd s) then
+      let new_h = max (i+1) (List.length s) in
+      let new_l = max (j+j2-j1+1) (List.length (List.hd s)) in
+      writeRow (expandSheet s new_h new_l) i_ ans
+    else writeRow s i_ ans;;
 
 let rec add_const (s:sheet) (r:range) (f:float) (i_:index): sheet = s;;
 let rec subt_const (s:sheet) (r:range) (f:float) (i_:index): sheet = s;;
