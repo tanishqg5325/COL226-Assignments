@@ -99,6 +99,62 @@ let rec col_ans (s:sheet) (r:range) f (e:float): float list =
                       | UNDEFINED -> raise EmptyCell
               in merge x (col_ans xs (RANGE(INDICE(0, j1), INDICE(i2-1, j2))) f e) j1 j2;;
 
+let rec full_count_ans (s:sheet) (r:range): float =
+  match s with
+      [] -> 0.
+    | x::xs ->
+        match r with RANGE(INDICE(i1, j1), INDICE(i2, j2)) ->
+          if i1 > 0 then full_count_ans xs (RANGE(INDICE(i1-1, j1), INDICE(i2-1, j2)))
+          else if i2 < 0 then 0.
+          else
+            let rec full_row_ans (v:value list) (i1:int) (i2:int): float =
+                match v with 
+                    [] -> 0.
+                  | y::ys -> if i1 > 0 then full_row_ans ys (i1-1) (i2-1)
+                            else if i2 < 0 then 0.
+                            else match y with
+                                FLOAT(c) -> 1. +. (full_row_ans ys 0 (i2-1))
+                              | UNDEFINED -> full_row_ans ys 0 (i2-1)
+            in (full_row_ans x j1 j2) +. (full_count_ans xs (RANGE(INDICE(0, j1), INDICE(i2-1, j2))));;
+
+let rec row_count_ans (s:sheet) (r:range): float list =
+  let rec mkzerov (n:int): float list = if n = 0 then [] else 0.::mkzerov (n-1)
+  in match r with RANGE(INDICE(i1, j1), INDICE(i2, j2)) ->
+    if i2 < 0 then []
+    else match s with
+        [] -> mkzerov (i2+1)
+      | x::xs ->
+          if i1 > 0 then row_count_ans xs (RANGE(INDICE(i1-1, j1), INDICE(i2-1, j2)))
+          else
+            let rec full_row_ans (v:value list) (i1:int) (i2:int): float =
+              match v with
+                  [] -> 0.
+                | y::ys -> if i1 > 0 then full_row_ans ys (i1-1) (i2-1)
+                          else if i2 < 0 then 0.
+                          else match y with
+                              FLOAT(c) -> 1. +. (full_row_ans ys 0 (i2-1))
+                            | UNDEFINED -> full_row_ans ys 0 (i2-1)
+            in (full_row_ans x j1 j2)::row_count_ans xs (RANGE(INDICE(0, j1), INDICE(i2-1, j2)));;
+
+let rec col_count_ans (s:sheet) (r:range): float list =
+  let rec mkzerov (n:int): float list = if n = 0 then [] else 0.::mkzerov (n-1)
+  in match r with RANGE(INDICE(i1, j1), INDICE(i2, j2)) ->
+  match s with
+        [] -> mkzerov (j2-j1+1)
+      | x::xs ->
+          if i1 > 0 then col_count_ans xs (RANGE(INDICE(i1-1, j1), INDICE(i2-1, j2)))
+          else if i2 < 0 then mkzerov (j2-j1+1)
+          else
+            let rec merge (v1:value list) (v2:float list) (i1:int) (i2:int): float list =
+              if i1 > 0 then merge v1 v2 (i1-1) (i2-1)
+              else if i2 < 0 then []
+              else match v1 with
+                  [] -> v2
+                | v::vs -> match v with
+                      FLOAT(c) -> (1. +. (List.hd v2))::merge vs (List.tl v2) 0 (i2-1)
+                    | UNDEFINED -> (List.hd v2)::merge vs (List.tl v2) 0 (i2-1)
+            in merge x (col_count_ans xs (RANGE(INDICE(0, j1), INDICE(i2-1, j2)))) j1 j2;;
+
 let rec expandSheet (s:sheet) (h:int) (l:int): sheet =
   let rec makeUndefinedRow (n:int): value list = if n = 0 then [] else UNDEFINED::makeUndefinedRow (n-1)
   in match s with
@@ -145,9 +201,34 @@ let rec writeCol (s:sheet) (i_:index) (c:float list): sheet =
               in (colWriteCell x j (List.hd c))::writeCol xs i_ (List.tl c);;
 
 (* Backend *)
-let rec full_count (s:sheet) (r:range) (i:index): sheet = s;;
-let rec row_count (s:sheet) (r:range) (i:index): sheet = s;;
-let rec col_count (s:sheet) (r:range) (i:index): sheet = s;;
+let rec full_count (s:sheet) (r:range) (i_:index): sheet =
+  let ans = full_count_ans s r in
+  match i_ with INDICE(i, j) ->
+    if i >= List.length s || j >= List.length (List.hd s) then 
+      let new_h = max (i+1) (List.length s) in
+      let new_l = max (j+1) (List.length (List.hd s)) in
+      writeCell (expandSheet s new_h new_l) i_ ans
+    else writeCell s i_ ans;;
+
+let rec row_count (s:sheet) (r:range) (i_:index): sheet =
+  let ans = row_count_ans s r in
+  match i_ with INDICE(i, j) ->
+    match r with RANGE(INDICE(i1, _), INDICE(i2, _)) ->
+    if i+i2-i1 >= List.length s || j >= List.length (List.hd s) then
+      let new_h = max (i+i2-i1+1) (List.length s) in
+      let new_l = max (j+1) (List.length (List.hd s)) in
+      writeCol (expandSheet s new_h new_l) i_ ans
+    else writeCol s i_ ans;;
+
+let rec col_count (s:sheet) (r:range) (i_:index): sheet =
+  let ans = col_count_ans s r in
+  match i_ with INDICE(i, j) ->
+    match r with RANGE(INDICE(_, j1), INDICE(_, j2)) ->
+    if i >= List.length s || j+j2-j1 >= List.length (List.hd s) then
+      let new_h = max (i+1) (List.length s) in
+      let new_l = max (j+j2-j1+1) (List.length (List.hd s)) in
+      writeRow (expandSheet s new_h new_l) i_ ans
+    else writeRow s i_ ans;;
 
 let rec full_sum (s:sheet) (r:range) (i_:index): sheet = 
   let f a b = a +. b in
