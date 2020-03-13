@@ -398,8 +398,7 @@ let rec col_max (s:sheet) (r:range) (i_:index): sheet =
       writeRow (expandSheet s new_h new_l) i_ ans
     else writeRow s i_ ans;;
 
-let rec add_const (s:sheet) (r:range) (c:float) (i_:index): sheet =
-  let f a b = a +. b in
+let binary_range_const (s:sheet) (r:range) (c:float) (i_:index) f: sheet =
   let ans = full_range_ans s r c f in
   match i_ with INDICE(i, j) ->
     match r with RANGE(INDICE(i1, j1), INDICE(i2, j2)) ->
@@ -409,38 +408,17 @@ let rec add_const (s:sheet) (r:range) (c:float) (i_:index): sheet =
       writeRange (expandSheet s new_h new_l) i_ ans
     else writeRange s i_ ans;;
 
-let rec subt_const (s:sheet) (r:range) (c:float) (i_:index): sheet =
-  let f a b = a -. b in
-  let ans = full_range_ans s r c f in
-  match i_ with INDICE(i, j) ->
-    match r with RANGE(INDICE(i1, j1), INDICE(i2, j2)) ->
-    if i+i2-i1 >= List.length s || j+j2-j1 >= List.length (List.hd s) then
-      let new_h = max (i+i2-i1+1) (List.length s) in
-      let new_l = max (j+j2-j1+1) (List.length (List.hd s)) in
-      writeRange (expandSheet s new_h new_l) i_ ans
-    else writeRange s i_ ans;;
+let add_const (s:sheet) (r:range) (c:float) (i_:index): sheet =
+  let f a b = a +. b in binary_range_const s r c i_ f;;
 
-let rec mult_const (s:sheet) (r:range) (c:float) (i_:index): sheet =
-  let f a b = a *. b in
-  let ans = full_range_ans s r c f in
-  match i_ with INDICE(i, j) ->
-    match r with RANGE(INDICE(i1, j1), INDICE(i2, j2)) ->
-    if i+i2-i1 >= List.length s || j+j2-j1 >= List.length (List.hd s) then
-      let new_h = max (i+i2-i1+1) (List.length s) in
-      let new_l = max (j+j2-j1+1) (List.length (List.hd s)) in
-      writeRange (expandSheet s new_h new_l) i_ ans
-    else writeRange s i_ ans;;
+let subt_const (s:sheet) (r:range) (c:float) (i_:index): sheet =
+  let f a b = a -. b in binary_range_const s r c i_ f;;
 
-let rec div_const (s:sheet) (r:range) (c:float) (i_:index): sheet =
-  let f a b = a /. b in
-  let ans = full_range_ans s r c f in
-  match i_ with INDICE(i, j) ->
-    match r with RANGE(INDICE(i1, j1), INDICE(i2, j2)) ->
-    if i+i2-i1 >= List.length s || j+j2-j1 >= List.length (List.hd s) then
-      let new_h = max (i+i2-i1+1) (List.length s) in
-      let new_l = max (j+j2-j1+1) (List.length (List.hd s)) in
-      writeRange (expandSheet s new_h new_l) i_ ans
-    else writeRange s i_ ans;;
+let mult_const (s:sheet) (r:range) (c:float) (i_:index): sheet =
+  let f a b = a *. b in binary_range_const s r c i_ f;;
+
+let div_const (s:sheet) (r:range) (c:float) (i_:index): sheet =
+  let f a b = a /. b in binary_range_const s r c i_ f;;
 
 let rec applyOperation (c1:float list list) (c2:float list list) f: float list list =
   match c1 with
@@ -452,12 +430,9 @@ let rec applyOperation (c1:float list list) (c2:float list list) f: float list l
             | y::ys -> (f y (List.hd c2))::rowUtil ys (List.tl c2)
         in (rowUtil x (List.hd c2))::applyOperation xs (List.tl c2) f;;
 
-let rec add_range (s:sheet) (r1:range) (r2:range) (i_:index): sheet =
-  let f a b = a +. b in
+let binary_range_range (s:sheet) (r1:range) (r2:range) (i_:index) f: sheet =
   let g a b = a +. b in
-  let f1 = full_range_ans s r1 0. f in
-  let f2 = full_range_ans s r2 0. f in
-  let ans = applyOperation f1 f2 g in
+  let ans = applyOperation (full_range_ans s r1 0. g) (full_range_ans s r2 0. g) f in
   match i_ with INDICE(i, j) ->
     match r1 with RANGE(INDICE(i1, j1), INDICE(i2, j2)) ->
     if i+i2-i1 >= List.length s || j+j2-j1 >= List.length (List.hd s) then
@@ -466,47 +441,17 @@ let rec add_range (s:sheet) (r1:range) (r2:range) (i_:index): sheet =
       writeRange (expandSheet s new_h new_l) i_ ans
     else writeRange s i_ ans;;
 
-let rec subt_range (s:sheet) (r1:range) (r2:range) (i_:index): sheet =
-  let f a b = a +. b in
-  let g a b = a -. b in
-  let f1 = full_range_ans s r1 0. f in
-  let f2 = full_range_ans s r2 0. f in
-  let ans = applyOperation f1 f2 g in
-  match i_ with INDICE(i, j) ->
-    match r1 with RANGE(INDICE(i1, j1), INDICE(i2, j2)) ->
-    if i+i2-i1 >= List.length s || j+j2-j1 >= List.length (List.hd s) then
-      let new_h = max (i+i2-i1+1) (List.length s) in
-      let new_l = max (j+j2-j1+1) (List.length (List.hd s)) in
-      writeRange (expandSheet s new_h new_l) i_ ans
-    else writeRange s i_ ans;;
+let add_range (s:sheet) (r1:range) (r2:range) (i_:index): sheet =
+  let f a b = a +. b in binary_range_range s r1 r2 i_ f;;
 
-let rec mult_range (s:sheet) (r1:range) (r2:range) (i_:index): sheet =
-  let f a b = a +. b in
-  let g a b = a *. b in
-  let f1 = full_range_ans s r1 0. f in
-  let f2 = full_range_ans s r2 0. f in
-  let ans = applyOperation f1 f2 g in
-  match i_ with INDICE(i, j) ->
-    match r1 with RANGE(INDICE(i1, j1), INDICE(i2, j2)) ->
-    if i+i2-i1 >= List.length s || j+j2-j1 >= List.length (List.hd s) then
-      let new_h = max (i+i2-i1+1) (List.length s) in
-      let new_l = max (j+j2-j1+1) (List.length (List.hd s)) in
-      writeRange (expandSheet s new_h new_l) i_ ans
-    else writeRange s i_ ans;;
+let subt_range (s:sheet) (r1:range) (r2:range) (i_:index): sheet =
+  let f a b = a -. b in binary_range_range s r1 r2 i_ f;;
 
-let rec div_range (s:sheet) (r1:range) (r2:range) (i_:index): sheet =
-  let f a b = a +. b in
-  let g a b = a /. b in
-  let f1 = full_range_ans s r1 0. f in
-  let f2 = full_range_ans s r2 0. f in
-  let ans = applyOperation f1 f2 g in
-  match i_ with INDICE(i, j) ->
-    match r1 with RANGE(INDICE(i1, j1), INDICE(i2, j2)) ->
-    if i+i2-i1 >= List.length s || j+j2-j1 >= List.length (List.hd s) then
-      let new_h = max (i+i2-i1+1) (List.length s) in
-      let new_l = max (j+j2-j1+1) (List.length (List.hd s)) in
-      writeRange (expandSheet s new_h new_l) i_ ans
-    else writeRange s i_ ans;;
+let mult_range (s:sheet) (r1:range) (r2:range) (i_:index): sheet =
+  let f a b = a *. b in binary_range_range s r1 r2 i_ f;;
+
+let div_range (s:sheet) (r1:range) (r2:range) (i_:index): sheet =
+  let f a b = a /. b in binary_range_range s r1 r2 i_ f;;
 
 (* function which returns the value at given index in given sheet *)
 let rec getValueAtIndex (s:sheet) (i:index): value =
