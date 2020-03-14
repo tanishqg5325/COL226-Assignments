@@ -15,5 +15,3 @@ let s1 = applyFormula s0 "[0, 3] := ADD ([0, 0] : [2, 0]) ([0, 1] : [2, 1]);";;
 let s2 = applyFormula s1 "[0, 4] := MULT ([0, 0] : [2, 0]) ([0, 2] : [2, 2]);";;
 let s3 = applyFormula s2 "[0, 5] := ADD ([0, 4] : [2, 4]) 10.0;";;
 let s4 = applyFormula s3 "[0, 3] := DIV ([0, 4] : [2, 4]) [1, 1];";;
-let s5 = applyFormula s4 "[3, 0] := SUM ([0, 0] : [2, 2]);";;
-let s6 = applyFormula s5 "[3, 1] := COUNT ([3, 0] : [3, 4]);";;
