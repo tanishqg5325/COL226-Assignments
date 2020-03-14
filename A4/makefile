@@ -11,4 +11,4 @@ build:
 
 clean:
 	rm a2.ml a3.mli a3.ml
-	rm *.c*
+	rm *.cm*
