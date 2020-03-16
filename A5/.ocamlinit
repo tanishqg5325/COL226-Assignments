@@ -1,0 +1,5 @@
+#directory "_build";;
+
+#load "a5.cmo";;
+
+open A5;;
