@@ -32,8 +32,9 @@ let rec getWidthOfSheet s = match s with
   | x::xs -> max (List.length x) (getWidthOfSheet xs)
 ;;
 
-let m = max (int_of_string Sys.argv.(2)) (List.length s0);; 
+let m = max (int_of_string Sys.argv.(2)) (List.length s0);;
 let n = max (int_of_string Sys.argv.(3)) (getWidthOfSheet s0);;
+if m > 5000 || n > 5000 then raise MaxSheetSizeReached;;
 let s = expandSheet s0 m n;;
 
 let rec read_formulas in_stream =
