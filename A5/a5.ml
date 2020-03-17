@@ -69,13 +69,13 @@ let rec vars (t:term): variable list =
  * Given a term t and a substitution s, applies the (Unique Homomorphic
  * Extension of) s to t
  *)
-let subst (t:term) (s:substitution): term =
-  let rec substOne (subst_vt:variable * term) (t_:term): term =
-    match t_ with
-        V(x) -> if x = fst subst_vt then snd subst_vt
-                else t_
-      | Node(s, l) -> Node(s, List.map (substOne subst_vt) l)
-  in List.fold_left (fun t vt -> substOne vt t) t s
+let rec subst (s:substitution) (t:term): term =
+  match t with
+      Node(s', l) -> Node(s', List.map (subst s) l)
+    | V(x) -> match s with
+                  [] -> t
+                | s'::xs -> if fst s' = x then subst xs (snd s')
+                            else subst xs t
 ;;
 
 (* Given a variable v, checks whether v is present in well-formed term t *)
@@ -100,6 +100,6 @@ let rec mgu (t1:term) (t2:term): substitution =
     | (Node(s1, l1), Node(s2, l2)) -> 
         if s1 <> s2 then raise NOT_UNIFIABLE
         else 
-          let f s tt = s @ (mgu (subst (fst tt) s) (subst (snd tt) s)) in
+          let f s tt = s @ (mgu (subst s (fst tt)) (subst s (snd tt))) in
           List.fold_left f [] (List.combine l1 l2)
 ;;
