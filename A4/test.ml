@@ -1,8 +1,3 @@
-#directory "_build";;
-#load "a2.cmo";;
-#load "a3.cmo";;
-#load "sheet.cmo";;
-
 open A2;;
 open A3;;
 open Sheet;;
@@ -10,8 +5,63 @@ open Sheet;;
 let applyFormula (t:sheet) (s:string): sheet =
   eval t (A3.main A2.read (Lexing.from_string s));;
 
-let s0 = [[FLOAT(1.0); FLOAT(10.0); FLOAT(100.0)]; [FLOAT(2.0); FLOAT(20.0); FLOAT(200.0)]; [FLOAT(3.0); FLOAT(30.0); FLOAT(300.0)]];;
-let s1 = applyFormula s0 "[0, 3] := ADD ([0, 0] : [2, 0]) ([0, 1] : [2, 1]);";;
-let s2 = applyFormula s1 "[0, 4] := MULT ([0, 0] : [2, 0]) ([0, 2] : [2, 2]);";;
-let s3 = applyFormula s2 "[0, 5] := ADD ([0, 4] : [2, 4]) 10.0;";;
-let s4 = applyFormula s3 "[0, 3] := DIV ([0, 4] : [2, 4]) [1, 1];";;
+let is_float s =
+  try ignore (float_of_string s); true
+  with _ -> false
+;;
+
+let rec convertListToSheet l = match l with
+    [] -> []
+  | x::xs -> if is_float x then FLOAT((float_of_string x))::convertListToSheet xs
+            else UNDEFINED::convertListToSheet xs
+;;
+
+let rec read_file in_stream =
+  try
+    let line = input_line in_stream in
+    let split = Str.split (Str.regexp ",") in
+    (convertListToSheet (split line))::read_file in_stream
+  with End_of_file -> []
+;;
+
+let in_stream = open_in Sys.argv.(1);;
+let s0 = read_file in_stream;;
+
+let rec getWidthOfSheet s = match s with
+    [] -> 0
+  | x::xs -> max (List.length x) (getWidthOfSheet xs)
+;;
+
+let m = max (int_of_string Sys.argv.(2)) (List.length s0);; 
+let n = max (int_of_string Sys.argv.(3)) (getWidthOfSheet s0);;
+let s = expandSheet s0 m n;;
+
+let rec read_formulas in_stream =
+  try
+    let line = input_line in_stream in line::read_formulas in_stream
+  with End_of_file -> []
+;;
+
+let rec print_list = function 
+  [] -> ()
+  | e::l -> match e with
+        FLOAT(c) -> print_float c ; print_string "\t"; print_list l
+      | UNDEFINED -> print_string "E\t" ; print_list l
+;;
+
+let rec print_sheet = function
+    [] -> ()
+  | x::xs -> print_list x; print_string "\n"; print_sheet xs
+;;
+
+let formula_stream = open_in Sys.argv.(4);;
+let formulas_list = read_formulas formula_stream;;
+
+let rec processFormulas (s:sheet) (f:string list) = match f with
+    [] -> ()
+  | x::xs -> let s' = applyFormula s x in
+             print_sheet s'; print_string "\n"; processFormulas s' xs
+;;
+
+print_sheet s;; print_string "\n";;
+processFormulas s formulas_list;;
