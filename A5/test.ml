@@ -8,6 +8,6 @@ size t;;
 vars t;;
 let s = [("b", Node("plus", [Node("one", []); V("a")])); ("a", Node("unary", [V("c")])); ("c", Node("two", []))];;
 subst s t;;
-let t1 = Node("plus", [Node("zero", []); V("a")]);;
-let t2 = Node("plus", [V("a"); Node("zero", [])]);;
+let t1 = Node("plus", [Node("unary", [V("b")]); V("a")]);;
+let t2 = Node("plus", [V("a"); Node("unary", [V("c")])]);;
 mgu t1 t2;;

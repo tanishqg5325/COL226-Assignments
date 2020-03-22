@@ -1,0 +1,6 @@
+### Starting build.
+# Target: a5.ml.depends, tags: { extension:ml, file:a5.ml, ocaml, ocamldep, quiet }
+/usr/bin/ocamldep.opt -modules a5.ml > a5.ml.depends # cached
+# Target: a5.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:a5.cmo, file:a5.ml, implem, ocaml, quiet }
+/usr/bin/ocamlc.opt -c -o a5.cmo a5.ml # cached
+# Compilation successful.
