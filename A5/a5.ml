@@ -11,6 +11,24 @@ let rec exists x y = match y with
   | z::ys -> (x = z) || (exists x ys)
 ;;
 
+(* Helper Function: foldl f a [b1; ...; bn] is f (... (f (f a b1) b2) ...) bn *)
+let rec foldl f e l = match l with
+    [] -> e
+  | x::xs -> foldl f (f e x) xs
+;;
+
+(* Helper Function: map f [a1; ...; an] applies function f to a1, ..., an, and builds the list [f a1; ...; f an] *)
+let rec map f l = match l with
+    [] -> []
+  | x::xs -> (f x)::map f xs
+;;
+
+(* Helper Function: combine [a1; ...; an] [b1; ...; bn] is [(a1,b1); ...; (an,bn)] *)
+let rec combine l1 l2 = match l1 with
+    [] -> []
+  | x::xs -> (x, (List.hd l2))::combine xs (List.tl l2)
+;;
+
 (*
  * Given a signature consisting of symbols and their arities (>= 0) as a list of
  * (symbol, arity) pairs, checks whether the signature is a valid signature (no
@@ -33,21 +51,21 @@ let rec check_sig (signature:(symbol * int) list): bool =
 let rec wfterm (signature:(symbol * int) list) (t:term): bool =
   match t with
       V(v) -> true
-    | Node(s, l) -> exists (s, List.length l) signature && List.for_all (wfterm signature) l
+    | Node(s, l) -> exists (s, List.length l) signature && foldl (&&) true (map (wfterm signature) l)
 ;;
 
 (* Given a well-formed term, return its height *)
 let rec ht (t:term): int =
   match t with
       V(v) -> 0
-    | Node(s, l) -> 1 + (List.fold_left max (-1) (List.map ht l))
+    | Node(s, l) -> 1 + (foldl max (-1) (map ht l))
 ;;
 
 (* Given a well-formed term, return its size *)
 let rec size (t:term): int =
   match t with
       V(v) -> 1
-    | Node(s, l) -> 1 + (List.fold_left (+) 0 (List.map size l))
+    | Node(s, l) -> 1 + (foldl (+) 0 (map size l))
 ;;
 
 (*
@@ -62,7 +80,7 @@ let rec vars (t:term): variable list =
             [] -> l2
           | x::xs -> if (exists x l2) then union xs l2
                      else x::(union xs l2)
-        in List.fold_left union [] (List.map vars l)
+        in foldl union [] (map vars l)
 ;;
 
 (*
@@ -71,7 +89,7 @@ let rec vars (t:term): variable list =
  *)
 let rec subst (s:substitution) (t:term): term =
   match t with
-      Node(s', l) -> Node(s', List.map (subst s) l)
+      Node(s', l) -> Node(s', map (subst s) l)
     | V(x) -> match s with
                   [] -> t
                 | s'::xs -> if fst s' = x then subst xs (snd s')
@@ -82,7 +100,7 @@ let rec subst (s:substitution) (t:term): term =
 let rec variableInTerm (v:variable) (t:term): bool =
   match t with
       V(x) -> x = v
-    | Node(s, l) -> List.exists (variableInTerm v) l
+    | Node(s, l) -> foldl (||) false (map (variableInTerm v) l)
 ;;
 
 (*
@@ -101,5 +119,5 @@ let rec mgu (t1:term) (t2:term): substitution =
         if s1 <> s2 then raise NOT_UNIFIABLE
         else 
           let f s tt = s @ (mgu (subst s (fst tt)) (subst s (snd tt))) in
-          List.fold_left f [] (List.combine l1 l2)
+          foldl f [] (combine l1 l2)
 ;;
