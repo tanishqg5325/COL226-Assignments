@@ -34,6 +34,12 @@ let rec combine l1 l2 = match l1 with
   | x::xs -> (x, (List.hd l2))::combine xs (List.tl l2)
 ;;
 
+let rec union l1 l2 = match l1 with
+    [] -> l2
+  | x::xs -> if (exists x l2) then union xs l2
+             else x::(union xs l2)
+;;
+
 let rec find_arity (x:symbol) (y:signature): int = match y with
     [] -> -1
   | z::ys -> if fst z = x then snd z else find_arity x ys
@@ -95,6 +101,18 @@ let rec modifyProg2 (prog:program) (A(s, _): atom): program = match prog with
                 else cl::modifyProg2 ps (A(s, []))
 ;;
 
+let rec vars_term (t:term): variable list =
+  match t with
+      V(v) -> [v]
+    | Node(s, l) -> foldl union [] (map vars_term l)
+;;
+
+let vars_atom (A(s, l)) = vars_term (Node(s, l))
+;;
+
+let rec vars_goal (G(g)) = foldl union [] (map vars_atom g)
+;;
+
 let rec subst (s:substitution) (t:term): term =
   match t with
       Node(s', l) -> Node(s', map (subst s) l)
@@ -132,6 +150,25 @@ let rec mgu_term (t1:term) (t2:term): substitution =
 ;;
 
 let mgu_atom (A(s1, l1)) (A(s2, l2)): substitution = mgu_term (Node(s1, l1)) (Node(s2, l2))
+;;
+
+let rec print_term_list tl = match tl with
+    [] -> Printf.printf ""
+  | [t] -> print_term t
+  | t::tls -> (
+      print_term t;
+      Printf.printf ", ";
+      print_term_list tls;
+    )
+
+and print_term t = match t with
+    V(v) -> Printf.printf " Var %s " v
+  | Node(s, []) -> Printf.printf " %s " s
+  | Node(s, l) -> (
+      Printf.printf " %s ( " s;
+      print_term_list l;
+      Printf.printf " ) ";
+    )
 ;;
 
 let solve_atom_atom (a1:atom) (a2:atom) (unif:substitution): substitution =
