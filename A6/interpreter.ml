@@ -69,6 +69,32 @@ let rec wfgoal (g:goal) (sign:signature): bool =
     | G(A(s, l)::xs) -> wfterm sign (Node(s, l)) && wfgoal (G(xs)) sign
 ;;
 
+let rec modifyTerm (i:int) (t:term): term = match t with
+    V(v) -> V((string_of_int i) ^ v)
+  | Node(s, l) -> Node(s, map (modifyTerm i) l)
+;;
+
+let rec modifyAtom (i:int) (a:atom): atom = match a with
+  A(s, l) -> A(s, map (modifyTerm i) l)
+;;
+
+let rec modifyClause (cl:clause) (i:int): clause = match cl with
+    F(H(a)) -> F(H(modifyAtom i a))
+  | R(H(a), B(l)) -> R(H(modifyAtom i a), B(map (modifyAtom i) l))
+;;
+
+let rec modifyInitialProg (prog:program) (i:int): program = match prog with
+    [] -> []
+  | cl::ps -> (modifyClause cl i)::modifyInitialProg ps (i+1)
+;;
+
+let rec modifyProg2 (prog:program) (A(s, _): atom): program = match prog with
+    [] -> []
+  | cl::ps -> match cl with F(H(A(s', _))) | R(H(A(s', _)), _) ->
+                if s = s' then (modifyClause cl 0)::modifyProg2 ps (A(s, []))
+                else cl::modifyProg2 ps (A(s, []))
+;;
+
 let rec subst (s:substitution) (t:term): term =
   match t with
       Node(s', l) -> Node(s', map (subst s) l)
@@ -98,7 +124,7 @@ let rec mgu_term (t1:term) (t2:term): substitution =
                             else [(x, t2)]
     | (Node(_, _), V(y)) -> if variableInTerm y t1 then raise NOT_UNIFIABLE
                             else [(y, t1)]
-    | (Node(s1, l1), Node(s2, l2)) -> 
+    | (Node(s1, l1), Node(s2, l2)) ->
         if s1 <> s2 then raise NOT_UNIFIABLE
         else 
           let f s tt = compose s (mgu_term (subst s (fst tt)) (subst s (snd tt))) in
@@ -108,26 +134,33 @@ let rec mgu_term (t1:term) (t2:term): substitution =
 let mgu_atom (A(s1, l1)) (A(s2, l2)): substitution = mgu_term (Node(s1, l1)) (Node(s2, l2))
 ;;
 
-let solve_atom_atom a1 a2 unif =
-  try (true, compose unif (mgu_atom (subst_atom unif a1) (subst_atom unif a2)))
-  with NOT_UNIFIABLE -> (false, [])
+let solve_atom_atom (a1:atom) (a2:atom) (unif:substitution): substitution =
+  compose unif (mgu_atom (subst_atom unif a1) (subst_atom unif a2))
 ;;
 
-let rec solve_atom_clause prog a clause unif = match clause with
-    F(H(a')) -> solve_atom_atom a a' unif
-  | R(H(a'), B(al)) -> match (solve_atom_atom a a' unif) with
-       (true, u) -> solve_goal prog (G(al)) u
-      | _ -> (false, [])
-
-and solve_goal (prog:program) (goal:goal) (unif:substitution) = match goal with
-    G([]) -> (true, unif)
-  | G(a::gs) ->
-      let rec f prog' = match prog' with
-          [] -> (false, [])
-        | c::ps ->  match (solve_atom_clause prog a c unif) with
-                        (true, u) -> (true, u)
-                      | _ -> f ps
-      in let ans = f prog in
-      if fst ans = true then solve_goal prog (G(gs)) (snd ans)
-      else (false, [])
+let rec solve_goal (prog:program) (g:goal) (unif:substitution): (bool * substitution) =
+  match g with
+      G([]) -> (true, unif)
+    | G(a::gs) ->
+        let new_prog = modifyProg2 prog a in
+        let rec iter prog' = match prog' with
+            [] -> (false, [])
+          | cl::ps -> match cl with
+                F(H(a')) -> (
+                    try
+                      let u = (solve_atom_atom a' a unif) in
+                      match (solve_goal new_prog (G(gs)) u) with
+                          (true, u') -> (true, u')
+                        | _ -> iter ps
+                    with NOT_UNIFIABLE -> iter ps
+                  )
+              | R(H(a'), B(al)) -> (
+                    try
+                      let u = (solve_atom_atom a' a unif) in
+                      match (solve_goal new_prog (G(al @ gs)) u) with
+                          (true, u') -> (true, u')
+                        | _ -> iter ps
+                    with NOT_UNIFIABLE -> iter ps
+                  )
+        in iter prog
 ;;
