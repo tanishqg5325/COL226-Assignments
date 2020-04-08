@@ -209,6 +209,10 @@ let solve_atom_atom (a1:atom) (a2:atom) (unif:substitution): substitution =
   compose unif (mgu_atom (subst_atom unif a1) (subst_atom unif a2))
 ;;
 
+let solve_term_term (t1:term) (t2:term) (unif:substitution): substitution =
+  compose unif (mgu_term (subst unif t1) (subst unif t2))
+;;
+
 let rec solve_goal (prog:program) (g:goal) (unif:substitution) (vars:variable list): (bool * substitution) =
   match g with
       G([]) -> (
@@ -228,11 +232,18 @@ let rec solve_goal (prog:program) (g:goal) (unif:substitution) (vars:variable li
           else (false, [])
         end
       )
-    | G(a::gs) ->
-        let new_prog = modifyProg2 prog a in
-        let rec iter prog' = match prog' with
-            [] -> (false, [])
-          | cl::ps -> match cl with
+    | G(a::gs) -> match a with
+          A("_eq", [t1; t2]) -> (
+            try
+              let u = solve_term_term t1 t2 unif
+              in solve_goal prog (G(gs)) u vars
+            with NOT_UNIFIABLE -> (false, [])
+          )
+        | _ ->
+          let new_prog = modifyProg2 prog a in
+          let rec iter prog' = match prog' with
+              [] -> (false, [])
+            | cl::ps -> match cl with
                 F(H(a')) -> (
                     try
                       let u = (solve_atom_atom a' a unif) in

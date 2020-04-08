@@ -14,7 +14,7 @@ end;;
 
 let fstream = open_in Sys.argv.(1);;
 let init_prog = Parser.program Lexer.read (Lexing.from_channel fstream);;
-let signature = getSigProgram init_prog [];;
+let signature = union ([("_eq", 2)]) (getSigProgram init_prog []);;
 let prog = modifyInitialProg init_prog 1;;
 
 print_string "Program loaded successfully\n";;
@@ -34,4 +34,4 @@ try
     with | _ -> print_string "Invalid query\n"
   done
 
-with _ -> print_string "\nExiting...\n"
+with _ -> print_string "\n% halt\n"

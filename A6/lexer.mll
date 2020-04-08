@@ -5,7 +5,7 @@
 
 let alpha_num = ['A'-'Z' 'a'-'z' '0'-'9' '_']
 let var = ['A'-'Z'](alpha_num*)
-let cons = ['a'-'z'](alpha_num*)
+let cons = ['a'-'z'](alpha_num*) | ("\"" [^ '\"']+ "\"")
 let sp = [' ' '\t' '\n']+
 
 rule read = parse

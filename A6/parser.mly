@@ -36,7 +36,9 @@ atom_list:
 
 atom:
     LP atom RP                          {$2}
+  | CONS                                {A($1, [])}
   | CONS LP term_list RP                {A($1, $3)}
+  | term EQ term                        {A("_eq", [$1; $3])}
 ;
 
 term_list:
@@ -45,7 +47,7 @@ term_list:
 ;
 
 term:
-    LP term RP                          {$2}
+    /* LP term RP                          {$2} */
   | VAR                                 {V($1)}
   | CONS                                {Node($1, [])}
   | CONS LP term_list RP                {Node($1, $3)}
