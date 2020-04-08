@@ -1,4 +1,3 @@
-(* Header *)
 {
   open Parser;;
   exception InvalidToken of char ;;
@@ -22,4 +21,17 @@ rule read = parse
   | '='                   {EQ}
   | '.'                   {ENDL}
   | ":-"                  {COND}
+  | '%'                   {single_line_comment lexbuf}
+  | "/*"                  {multiline_comment 0 lexbuf}
   | _ as s                {raise (InvalidToken s)}
+
+and single_line_comment = parse
+    eof                   {EOF}
+  | '\n'                  {read lexbuf}
+  |   _                   {single_line_comment lexbuf}
+
+and multiline_comment depth = parse
+    eof                   {failwith "Syntax error: End of file in /* ... */ comment"}
+  | "*/"                  {if depth = 0 then read lexbuf else multiline_comment (depth-1) lexbuf}
+  | "/*"                  {multiline_comment (depth+1) lexbuf}
+  |  _                    {multiline_comment depth lexbuf}
