@@ -192,7 +192,7 @@ let get1char () =
   res
 
 let rec printSolution (unif:substitution) = match unif with
-    [] -> Printf.printf ""
+    [] -> Printf.printf "true. "
   | [(v, t)] -> (
       Printf.printf "%s = " v;
       print_term t;
@@ -216,10 +216,7 @@ let solve_term_term (t1:term) (t2:term) (unif:substitution): substitution =
 let rec solve_goal (prog:program) (g:goal) (unif:substitution) (vars:variable list): (bool * substitution) =
   match g with
       G([]) -> (
-        let sol = getSolution unif vars in
-        if List.length sol = 0 then (true, [])
-        else begin
-          printSolution sol;
+          printSolution (getSolution unif vars);
           flush stdout;
           let choice = ref (get1char()) in
           while(!choice <> '.' && !choice <> ';') do
@@ -230,7 +227,6 @@ let rec solve_goal (prog:program) (g:goal) (unif:substitution) (vars:variable li
           Printf.printf "\n";
           if !choice = '.' then (true, [])
           else (false, [])
-        end
       )
     | G(a::gs) -> match a with
           A("_eq", [t1; t2]) -> (
