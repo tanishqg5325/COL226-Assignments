@@ -4,12 +4,12 @@ open Interpreter;;
 
 if Array.length Sys.argv < 2 then begin
   print_string "Input file not provided.\nExiting...\n";
-  exit(0);
+  exit 0;
 end;;
 
 if Array.length Sys.argv > 2 then begin
   print_string "Too many arguments.\nExiting...\n";
-  exit(0);
+  exit 0;
 end;;
 
 let fstream = open_in Sys.argv.(1);;
@@ -23,7 +23,8 @@ try
   while(true) do
     print_string "?- ";
     let line = read_line() in
-    try
+    if line = "halt." then raise End_of_file
+    else try
       let g = Parser.goal Lexer.read (Lexing.from_string line) in
       if not (wfgoal g signature) then
         print_string "Signature mismatch between goal and program.\nfalse.\n"
