@@ -53,7 +53,7 @@ let rec getSigTerm (sign:signature) (t:term): signature = match t with
   | _ -> sign
 ;;
 
-let getSigAtom (sign:signature) (A(s, l)): signature = getSigTerm sign (Node(s, l))
+let getSigAtom (sign:signature) (A(s, l): atom): signature = getSigTerm sign (Node(s, l))
 ;;
 
 let rec getSigProgram (prog:program) (sign:signature): signature = match prog with
@@ -107,10 +107,10 @@ let rec vars_term (t:term): variable list =
     | Node(s, l) -> foldl union [] (map vars_term l)
 ;;
 
-let vars_atom (A(s, l)) = vars_term (Node(s, l))
+let vars_atom (A(s, l): atom): variable list = vars_term (Node(s, l))
 ;;
 
-let rec vars_goal (G(g)) = foldl union [] (map vars_atom g)
+let rec vars_goal (G(g): goal): variable list = foldl union [] (map vars_atom g)
 ;;
 
 let rec subst (s:substitution) (t:term): term =
@@ -121,7 +121,7 @@ let rec subst (s:substitution) (t:term): term =
                 | s'::xs -> if fst s' = x then snd s' else subst xs t
 ;;
 
-let rec subst_atom (s:substitution) (A(s', l)) = A(s', map (subst s) l)
+let rec subst_atom (s:substitution) (A(s', l): atom): atom = A(s', map (subst s) l)
 ;;
 
 let rec variableInTerm (v:variable) (t:term): bool =
@@ -149,19 +149,19 @@ let rec mgu_term (t1:term) (t2:term): substitution =
           foldl f [] (combine l1 l2)
 ;;
 
-let mgu_atom (A(s1, l1)) (A(s2, l2)): substitution = mgu_term (Node(s1, l1)) (Node(s2, l2))
+let mgu_atom (A(s1, l1): atom) (A(s2, l2): atom): substitution = mgu_term (Node(s1, l1)) (Node(s2, l2))
 ;;
 
-let rec print_term_list tl = match tl with
+let rec print_term_list (tl:term list) = match tl with
     [] -> Printf.printf ""
   | [t] -> print_term t
   | t::tls -> (
       print_term t;
-      Printf.printf ", ";
+      Printf.printf ",";
       print_term_list tls;
     )
 
-and print_term t = match t with
+and print_term (t:term) = match t with
     V(v) -> Printf.printf " Var %s " v
   | Node(s, []) -> Printf.printf " %s " s
   | Node(s, l) -> (
@@ -171,13 +171,63 @@ and print_term t = match t with
     )
 ;;
 
+let rec getSolution (unif:substitution) (vars:variable list) = match vars with
+    [] -> []
+  | v::vs ->
+      let rec occurs l = match l with
+          [] -> raise NotFound
+        | x::xs -> if (fst x) = v then x
+                    else occurs xs
+      in
+      try (occurs unif)::getSolution unif vs
+      with NotFound -> getSolution unif vs
+;;
+
+let get1char () =
+  let termio = Unix.tcgetattr Unix.stdin in
+  let () = Unix.tcsetattr Unix.stdin Unix.TCSADRAIN
+          { termio with Unix.c_icanon = false } in
+  let res = input_char stdin in
+  Unix.tcsetattr Unix.stdin Unix.TCSADRAIN termio;
+  res
+
+let rec printSolution (unif:substitution) = match unif with
+    [] -> Printf.printf ""
+  | [(v, t)] -> (
+      Printf.printf "%s = " v;
+      print_term t;
+    )
+  | (v, t)::xs -> (
+      Printf.printf "%s = " v;
+      print_term t;
+      Printf.printf ", ";
+      printSolution xs;
+    )
+;;
+
 let solve_atom_atom (a1:atom) (a2:atom) (unif:substitution): substitution =
   compose unif (mgu_atom (subst_atom unif a1) (subst_atom unif a2))
 ;;
 
-let rec solve_goal (prog:program) (g:goal) (unif:substitution): (bool * substitution) =
+let rec solve_goal (prog:program) (g:goal) (unif:substitution) (vars:variable list): (bool * substitution) =
   match g with
-      G([]) -> (true, unif)
+      G([]) -> (
+        let sol = getSolution unif vars in
+        if List.length sol = 0 then (true, [])
+        else begin
+          printSolution sol;
+          flush stdout;
+          let choice = ref (get1char()) in
+          while(!choice <> '.' && !choice <> ';') do
+            Printf.printf "\nUnknown Action: %c \nAction? " (!choice);
+            flush stdout;
+            choice := get1char();
+          done;
+          Printf.printf "\n";
+          if !choice = '.' then (true, [])
+          else (false, [])
+        end
+      )
     | G(a::gs) ->
         let new_prog = modifyProg2 prog a in
         let rec iter prog' = match prog' with
@@ -186,7 +236,7 @@ let rec solve_goal (prog:program) (g:goal) (unif:substitution): (bool * substitu
                 F(H(a')) -> (
                     try
                       let u = (solve_atom_atom a' a unif) in
-                      match (solve_goal new_prog (G(gs)) u) with
+                      match (solve_goal new_prog (G(gs)) u vars) with
                           (true, u') -> (true, u')
                         | _ -> iter ps
                     with NOT_UNIFIABLE -> iter ps
@@ -194,10 +244,13 @@ let rec solve_goal (prog:program) (g:goal) (unif:substitution): (bool * substitu
               | R(H(a'), B(al)) -> (
                     try
                       let u = (solve_atom_atom a' a unif) in
-                      match (solve_goal new_prog (G(al @ gs)) u) with
+                      match (solve_goal new_prog (G(al @ gs)) u vars) with
                           (true, u') -> (true, u')
                         | _ -> iter ps
                     with NOT_UNIFIABLE -> iter ps
                   )
         in iter prog
+;;
+
+let interpret_goal (prog:program) (g:goal) = solve_goal prog g [] (vars_goal g)
 ;;
