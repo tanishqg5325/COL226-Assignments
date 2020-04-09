@@ -23,6 +23,7 @@ rule read = parse
   | ']'                   {RB}
   | ','                   {COMMA}
   | '='                   {EQ}
+  | "\\="                 {NOT_EQ}
   | '|'                   {PIPE}
   | '.'                   {ENDL}
   | ":-"                  {COND}

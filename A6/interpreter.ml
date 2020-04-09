@@ -61,12 +61,14 @@ let rec getSigProgram (prog:program) (sign:signature): signature = match prog wi
     [] -> sign
   | (F(H(a)))::xs -> (
       match a with
-          A("_eq", _) -> raise InvalidProgram
+          A("_eq", _)
+        | A("_not_eq", _) -> raise InvalidProgram
         | _ -> getSigProgram xs (getSigAtom sign a)
     )
   | (R(H(a), B(l)))::xs -> (
       match a with
-          A("_eq", _) -> raise InvalidProgram
+          A("_eq", _)
+        | A("_not_eq", _) -> raise InvalidProgram
         | _ -> getSigProgram xs (foldl getSigAtom (getSigAtom sign a) l)
     )
 ;;
@@ -249,7 +251,8 @@ let solve_term_term (t1:term) (t2:term) (unif:substitution): substitution =
 ;;
 
 let rec eval (a:atom) (unif:substitution): substitution = match a with
-    A("_eq", [t1; t2]) -> solve_term_term t1 t2 unif
+    A("_eq", [t1; t2])
+  | A("_not_eq", [t1; t2]) -> solve_term_term t1 t2 unif
   | _ -> unif
 ;;
 
@@ -272,6 +275,10 @@ let rec solve_goal (prog:program) (g:goal) (unif:substitution) (vars:variable li
           A("_eq", _) -> (
             try solve_goal prog (G(gs)) (eval a unif) vars
             with NOT_UNIFIABLE -> (false, [])
+          )
+        | A("_not_eq", _) -> (
+            try (false, eval a unif)
+            with NOT_UNIFIABLE -> solve_goal prog (G(gs)) unif vars
           )
         | _ ->
           let new_prog = modifyProg2 prog a in

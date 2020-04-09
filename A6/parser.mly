@@ -4,7 +4,10 @@
 
 %token <string> VAR CONS
 %token <int> NUM
-%token LP RP LB RB COMMA EQ ENDL COND PIPE EOF
+%token LP RP LB RB COMMA EQ NOT_EQ ENDL COND PIPE EOF
+
+%right COMMA
+%nonassoc EQ PIPE
 
 %start program goal
 %type <Interpreter.program> program
@@ -40,6 +43,7 @@ atom:
   | CONS                                {A($1, [])}
   | CONS LP term_list RP                {A($1, $3)}
   | term EQ term                        {A("_eq", [$1; $3])}
+  | term NOT_EQ term                    {A("_not_eq", [$1; $3])}
 ;
 
 term_list:
