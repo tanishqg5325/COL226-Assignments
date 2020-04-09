@@ -23,7 +23,7 @@ try
   while(true) do
     print_string "?- ";
     let line = read_line() in
-    if line = "halt." then raise End_of_file
+    if line = "halt." then exit 0
     else try
       let g = Parser.goal Lexer.read (Lexing.from_string line) in
       if not (wfgoal g signature) then

@@ -3,6 +3,7 @@
 %}
 
 %token <string> VAR CONS
+%token <int> NUM
 %token LP RP LB RB COMMA EQ ENDL COND PIPE EOF
 
 %start program goal
@@ -50,6 +51,7 @@ term:
     /* LP term RP                          {$2} */
   | VAR                                 {V($1)}
   | CONS                                {Node($1, [])}
+  | NUM                                 {Num($1)}
   | CONS LP term_list RP                {Node($1, $3)}
   | list                                {$1}
 ;
