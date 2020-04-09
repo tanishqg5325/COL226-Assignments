@@ -58,9 +58,16 @@ let getSigAtom (sign:signature) (A(s, l): atom): signature = getSigTerm sign (No
 
 let rec getSigProgram (prog:program) (sign:signature): signature = match prog with
     [] -> sign
-  | (F(H(a)))::xs -> getSigProgram xs (getSigAtom sign a)
-  | (R(H(a), B(l)))::xs ->  let f a = F(H(a)) in
-                            getSigProgram ((map f (a::l)) @ xs) sign
+  | (F(H(a)))::xs -> (
+      match a with
+          A("_eq", _) -> raise InvalidProgram
+        | _ -> getSigProgram xs (getSigAtom sign a)
+    )
+  | (R(H(a), B(l)))::xs -> (
+      match a with
+          A("_eq", _) -> raise InvalidProgram
+        | _ -> getSigProgram xs (foldl getSigAtom (getSigAtom sign a) l)
+    )
 ;;
 
 let rec wfterm (sign:signature) (t:term): bool =
@@ -162,7 +169,7 @@ let rec print_term_list (tl:term list) = match tl with
     )
 
 and print_term (t:term) = match t with
-    V(v) -> Printf.printf " Var %s " v
+    V(v) -> Printf.printf " %s " v
   | Node(s, []) -> Printf.printf " %s " s
   | Node(s, l) -> (
       Printf.printf " %s ( " s;
@@ -194,11 +201,11 @@ let get1char () =
 let rec printSolution (unif:substitution) = match unif with
     [] -> Printf.printf "true. "
   | [(v, t)] -> (
-      Printf.printf "%s = " v;
+      Printf.printf "%s =" v;
       print_term t;
     )
   | (v, t)::xs -> (
-      Printf.printf "%s = " v;
+      Printf.printf "%s =" v;
       print_term t;
       Printf.printf ", ";
       printSolution xs;
@@ -213,26 +220,29 @@ let solve_term_term (t1:term) (t2:term) (unif:substitution): substitution =
   compose unif (mgu_term (subst unif t1) (subst unif t2))
 ;;
 
+let rec eval a unif = match a with
+    A("_eq", [t1; t2]) -> solve_term_term t1 t2 unif
+  | _ -> unif
+;;
+
 let rec solve_goal (prog:program) (g:goal) (unif:substitution) (vars:variable list): (bool * substitution) =
   match g with
       G([]) -> (
-          printSolution (getSolution unif vars);
+        printSolution (getSolution unif vars);
+        flush stdout;
+        let choice = ref (get1char()) in
+        while(!choice <> '.' && !choice <> ';') do
+          Printf.printf "\nUnknown Action: %c \nAction? " (!choice);
           flush stdout;
-          let choice = ref (get1char()) in
-          while(!choice <> '.' && !choice <> ';') do
-            Printf.printf "\nUnknown Action: %c \nAction? " (!choice);
-            flush stdout;
-            choice := get1char();
-          done;
-          Printf.printf "\n";
-          if !choice = '.' then (true, [])
-          else (false, [])
+          choice := get1char();
+        done;
+        Printf.printf "\n";
+        if !choice = '.' then (true, [])
+        else (false, [])
       )
     | G(a::gs) -> match a with
-          A("_eq", [t1; t2]) -> (
-            try
-              let u = solve_term_term t1 t2 unif
-              in solve_goal prog (G(gs)) u vars
+          A("_eq", _) -> (
+            try solve_goal prog (G(gs)) (eval a unif) vars
             with NOT_UNIFIABLE -> (false, [])
           )
         | _ ->
@@ -241,21 +251,21 @@ let rec solve_goal (prog:program) (g:goal) (unif:substitution) (vars:variable li
               [] -> (false, [])
             | cl::ps -> match cl with
                 F(H(a')) -> (
-                    try
-                      let u = (solve_atom_atom a' a unif) in
-                      match (solve_goal new_prog (G(gs)) u vars) with
-                          (true, u') -> (true, u')
-                        | _ -> iter ps
-                    with NOT_UNIFIABLE -> iter ps
-                  )
+                  try
+                    let u = (solve_atom_atom a' a unif) in
+                    match (solve_goal new_prog (G(gs)) u vars) with
+                        (true, u') -> (true, u')
+                      | _ -> iter ps
+                  with NOT_UNIFIABLE -> iter ps
+                )
               | R(H(a'), B(al)) -> (
-                    try
-                      let u = (solve_atom_atom a' a unif) in
-                      match (solve_goal new_prog (G(al @ gs)) u vars) with
-                          (true, u') -> (true, u')
-                        | _ -> iter ps
-                    with NOT_UNIFIABLE -> iter ps
-                  )
+                  try
+                    let u = (solve_atom_atom a' a unif) in
+                    match (solve_goal new_prog (G(al @ gs)) u vars) with
+                        (true, u') -> (true, u')
+                      | _ -> iter ps
+                  with NOT_UNIFIABLE -> iter ps
+                )
         in iter prog
 ;;
 

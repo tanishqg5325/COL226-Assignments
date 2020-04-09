@@ -22,7 +22,7 @@ rule read = parse
   | '.'                   {ENDL}
   | ":-"                  {COND}
   | '%'                   {single_line_comment lexbuf}
-  | "/*"                  {multiline_comment 0 lexbuf}
+  | "/*"                  {multi_line_comment 0 lexbuf}
   | _ as s                {raise (InvalidToken s)}
 
 and single_line_comment = parse
@@ -30,8 +30,8 @@ and single_line_comment = parse
   | '\n'                  {read lexbuf}
   |   _                   {single_line_comment lexbuf}
 
-and multiline_comment depth = parse
+and multi_line_comment depth = parse
     eof                   {failwith "Syntax error: End of file in /* ... */ comment"}
-  | "*/"                  {if depth = 0 then read lexbuf else multiline_comment (depth-1) lexbuf}
-  | "/*"                  {multiline_comment (depth+1) lexbuf}
-  |  _                    {multiline_comment depth lexbuf}
+  | "*/"                  {if depth = 0 then read lexbuf else multi_line_comment (depth-1) lexbuf}
+  | "/*"                  {multi_line_comment (depth+1) lexbuf}
+  |  _                    {multi_line_comment depth lexbuf}
