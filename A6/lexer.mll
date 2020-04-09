@@ -19,6 +19,7 @@ rule read = parse
   | ']'                   {RB}
   | ','                   {COMMA}
   | '='                   {EQ}
+  | '|'                   {PIPE}
   | '.'                   {ENDL}
   | ":-"                  {COND}
   | '%'                   {single_line_comment lexbuf}

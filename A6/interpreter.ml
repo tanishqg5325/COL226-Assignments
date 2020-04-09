@@ -13,6 +13,7 @@ type substitution = (variable * term) list
 exception NOT_UNIFIABLE
 exception NotFound
 exception InvalidProgram
+exception NotPossible
 
 let rec exists x y = match y with
     [] -> false
@@ -73,7 +74,9 @@ let rec getSigProgram (prog:program) (sign:signature): signature = match prog wi
 let rec wfterm (sign:signature) (t:term): bool =
   match t with
       V(v) -> true
-    | Node(s, l) -> exists (s, List.length l) sign && foldl (&&) true (map (wfterm sign) l)
+    | Node(s, l) -> let a = find_arity s sign in
+                    if a <> -1 && a <> List.length l then false
+                    else foldl (&&) true (map (wfterm sign) l)
 ;;
 
 let rec wfgoal (g:goal) (sign:signature): bool =
@@ -168,9 +171,25 @@ let rec print_term_list (tl:term list) = match tl with
       print_term_list tls;
     )
 
+and print_list_body (t:term) = match t with
+    Node("_empty_list", []) -> Printf.printf ""
+  | Node("_list", [t1; Node("_empty_list", [])]) -> print_term t1
+  | Node("_list", [t1; t2]) -> (
+      print_term t1;
+      Printf.printf ",";
+      print_list_body t2;
+    )
+  | _ -> raise NotPossible
+
 and print_term (t:term) = match t with
     V(v) -> Printf.printf " %s " v
+  | Node("_empty_list", []) -> Printf.printf " [] "
   | Node(s, []) -> Printf.printf " %s " s
+  | Node("_list", _) -> (
+      Printf.printf " [";
+      print_list_body t;
+      Printf.printf "] ";
+    )
   | Node(s, l) -> (
       Printf.printf " %s ( " s;
       print_term_list l;

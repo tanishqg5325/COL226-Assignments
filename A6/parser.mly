@@ -3,7 +3,7 @@
 %}
 
 %token <string> VAR CONS
-%token LP RP LB RB COMMA EQ ENDL COND EOF
+%token LP RP LB RB COMMA EQ ENDL COND PIPE EOF
 
 %start program goal
 %type <Interpreter.program> program
@@ -51,4 +51,16 @@ term:
   | VAR                                 {V($1)}
   | CONS                                {Node($1, [])}
   | CONS LP term_list RP                {Node($1, $3)}
+  | list                                {$1}
+;
+
+list:
+    LB RB                               {Node("_empty_list", [])}
+  | LB list_body RB                     {$2}
+;
+
+list_body:
+    term                                 {Node("_list", [$1; Node("_empty_list", [])])}
+  | term COMMA list_body                 {Node("_list", [$1; $3])}
+  | term PIPE term                       {Node("_list", [$1; $3])}
 ;
