@@ -41,50 +41,12 @@ let rec union l1 l2 = match l1 with
              else x::(union xs l2)
 ;;
 
-let rec find_arity (x:symbol) (y:signature): int = match y with
-    [] -> -1
-  | z::ys -> if fst z = x then snd z else find_arity x ys
-;;
-
-let rec getSigTerm (sign:signature) (t:term): signature = match t with
-    Node(s, l) -> let a = find_arity s sign in
-                  if a = -1 then foldl getSigTerm ((s, List.length l)::sign) l
-                  else if a <> List.length l then raise InvalidProgram
-                  else foldl getSigTerm sign l
-  | _ -> sign
-;;
-
-let getSigAtom (sign:signature) (A(s, l): atom): signature = getSigTerm sign (Node(s, l))
-;;
-
-let rec getSigProgram (prog:program) (sign:signature): signature = match prog with
-    [] -> sign
-  | (F(H(a)))::xs -> (
-      match a with
-          A("_eq", _)
-        | A("_not_eq", _) -> raise InvalidProgram
-        | _ -> getSigProgram xs (getSigAtom sign a)
-    )
-  | (R(H(a), B(l)))::xs -> (
-      match a with
-          A("_eq", _)
-        | A("_not_eq", _) -> raise InvalidProgram
-        | _ -> getSigProgram xs (foldl getSigAtom (getSigAtom sign a) l)
-    )
-;;
-
-let rec wfterm (sign:signature) (t:term): bool =
-  match t with
-      Node(s, l) -> let a = find_arity s sign in
-                    if a <> -1 && a <> List.length l then false
-                    else foldl (&&) true (map (wfterm sign) l)
-    | _ -> true
-;;
-
-let rec wfgoal (g:goal) (sign:signature): bool =
-  match g with
-      G([]) -> true
-    | G(A(s, l)::xs) -> wfterm sign (Node(s, l)) && wfgoal (G(xs)) sign
+let rec checkProgram (prog:program): bool = match prog with
+    [] -> true
+  | (F(H(a)))::xs
+  | (R(H(a), _))::xs -> match a with
+          A("_eq", _) | A("_not_eq", _) | A("_cut", _) -> raise InvalidProgram
+        | _ -> checkProgram xs
 ;;
 
 let rec modifyTerm (i:int) (t:term): term = match t with
@@ -162,8 +124,8 @@ let rec mgu_term (t1:term) (t2:term): substitution =
     | (Num(n1), V(x)) -> [(x, t1)]
     | (V(x), Num(n2)) -> [(x, t2)] 
     | (Node(s1, l1), Node(s2, l2)) ->
-        if s1 <> s2 then raise NOT_UNIFIABLE
-        else 
+        if s1 <> s2 || (List.length l1 <> List.length l2) then raise NOT_UNIFIABLE
+        else
           let f s tt = compose s (mgu_term (subst s (fst tt)) (subst s (snd tt))) in
           foldl f [] (combine l1 l2)
     | _ -> raise NOT_UNIFIABLE
@@ -280,6 +242,7 @@ let rec solve_goal (prog:program) (g:goal) (unif:substitution) (vars:variable li
             try (false, eval a unif)
             with NOT_UNIFIABLE -> solve_goal prog (G(gs)) unif vars
           )
+        | A("_cut", _) -> let _ = solve_goal prog (G(gs)) unif vars in (true, [])
         | _ ->
           let new_prog = modifyProg2 prog a in
           let rec iter prog' = match prog' with

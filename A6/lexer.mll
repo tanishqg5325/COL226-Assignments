@@ -25,6 +25,7 @@ rule read = parse
   | '='                   {EQ}
   | "\\="                 {NOT_EQ}
   | '|'                   {PIPE}
+  | '!'                   {CUT}
   | '.'                   {ENDL}
   | ":-"                  {COND}
   | '%'                   {single_line_comment lexbuf}
