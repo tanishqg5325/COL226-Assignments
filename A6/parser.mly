@@ -4,10 +4,13 @@
 
 %token <string> VAR CONS
 %token <int> NUM
-%token LP RP LB RB COMMA EQ NOT_EQ ENDL CUT COND PIPE EOF
+%token LP RP LB RB COMMA EQ NOT_EQ ENDL CUT COND PIPE PLUS MINUS MULT DIV GT LT EOF
 
-%right COMMA
-%nonassoc EQ PIPE
+%left COMMA
+%nonassoc EQ PIPE LT GT
+%left PLUS MINUS
+%left MULT DIV
+%nonassoc ENDL
 
 %start program goal
 %type <Interpreter.program> program
@@ -39,11 +42,13 @@ atom_list:
 ;
 
 atom:
-    LP atom RP                          {$2}
+    /* LP atom RP                          {$2} */
   | CONS                                {A($1, [])}
   | CONS LP term_list RP                {A($1, $3)}
   | term EQ term                        {A("_eq", [$1; $3])}
   | term NOT_EQ term                    {A("_not_eq", [$1; $3])}
+  | term LT term                        {A("<", [$1; $3])}
+  | term GT term                        {A(">", [$1; $3])}
   | CUT                                 {A("_cut", [])}
 ;
 
@@ -53,11 +58,15 @@ term_list:
 ;
 
 term:
-    /* LP term RP                          {$2} */
+    LP term RP                          {$2}
   | VAR                                 {V($1)}
   | CONS                                {Node($1, [])}
   | NUM                                 {Num($1)}
   | CONS LP term_list RP                {Node($1, $3)}
+  | term PLUS term                      {Node("+", [$1; $3])}
+  | term MINUS term                     {Node("-", [$1; $3])}
+  | term MULT term                      {Node("*", [$1; $3])}
+  | term DIV term                       {Node("/", [$1; $3])}
   | list                                {$1}
 ;
 

@@ -17,7 +17,7 @@ append([Head|Tail],List2,[Head|Result]) :- append(Tail,List2,Result).
 
 delete_all([], A, []).
 delete_all([Head|Tail], A, Result) :- A = Head, delete_all(Tail, A, Result).
-delete_all([Head|Tail], A, [Head|Result]) :- delete_all(Tail, A, Result). % (A =/ Head missing)
+delete_all([Head|Tail], A, [Head|Result]) :- A \= Head, delete_all(Tail, A, Result).
 
 /* Queries
     delete_all([a,b,a,c,a,d],a,Result).

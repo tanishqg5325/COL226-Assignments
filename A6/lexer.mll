@@ -15,7 +15,7 @@ rule read = parse
     eof                   {EOF}
   | sp                    {read lexbuf}
   | var as v              {VAR(v)}
-  | cons as c             {CONS(c)}
+  | cons as c             {CONS(c)} 
   | number as n           {NUM(int_of_string n)}
   | '('                   {LP}
   | ')'                   {RP}
@@ -23,6 +23,12 @@ rule read = parse
   | ']'                   {RB}
   | ','                   {COMMA}
   | '='                   {EQ}
+  | '+'                   {PLUS}
+  | '-'                   {MINUS}
+  | '*'                   {MULT}
+  | '/'                   {DIV}
+  | '>'                   {GT}
+  | '<'                   {LT}
   | "\\="                 {NOT_EQ}
   | '|'                   {PIPE}
   | '!'                   {CUT}

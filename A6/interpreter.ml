@@ -43,9 +43,9 @@ let rec union l1 l2 = match l1 with
 
 let rec checkProgram (prog:program): bool = match prog with
     [] -> true
-  | (F(H(a)))::xs
-  | (R(H(a), _))::xs -> match a with
-          A("_eq", _) | A("_not_eq", _) | A("_cut", _) -> raise InvalidProgram
+  | (F(H(a)))::xs | (R(H(a), _))::xs -> match a with
+          A("_eq", _) | A("_not_eq", _) | A("_cut", _)
+        | A(">", _) | A("<", _)-> raise InvalidProgram
         | _ -> checkProgram xs
 ;;
 
@@ -212,9 +212,44 @@ let solve_term_term (t1:term) (t2:term) (unif:substitution): substitution =
   compose unif (mgu_term (subst unif t1) (subst unif t2))
 ;;
 
-let rec eval (a:atom) (unif:substitution): substitution = match a with
+let rec simplify_term (t:term): term = match t with
+    Num(_) -> t
+  | Node("+", [t1; t2]) -> (
+      match ((simplify_term t1), (simplify_term t2)) with
+          (Num(n1), Num(n2)) -> Num(n1 + n2)
+        | _ -> raise NOT_UNIFIABLE
+    )
+  | Node("-", [t1; t2]) -> (
+      match ((simplify_term t1), (simplify_term t2)) with
+          (Num(n1), Num(n2)) -> Num(n1 - n2)
+        | _ -> raise NOT_UNIFIABLE
+    )
+  | Node("*", [t1; t2]) -> (
+      match ((simplify_term t1), (simplify_term t2)) with
+          (Num(n1), Num(n2)) -> Num(n1 * n2)
+        | _ -> raise NOT_UNIFIABLE
+    )
+  | Node("/", [t1; t2]) -> (
+      match ((simplify_term t1), (simplify_term t2)) with
+          (Num(n1), Num(n2)) -> Num(n1 / n2)
+        | _ -> raise NOT_UNIFIABLE
+      )
+  | _ -> t
+;;
+
+let eval (a:atom) (unif:substitution): substitution = match a with
     A("_eq", [t1; t2])
-  | A("_not_eq", [t1; t2]) -> solve_term_term t1 t2 unif
+  | A("_not_eq", [t1; t2]) -> compose unif (mgu_term (simplify_term (subst unif t1)) (simplify_term (subst unif t2)))
+  | A(">", [t1; t2]) -> (
+        match (simplify_term (subst unif t1), simplify_term (subst unif t2)) with
+            (Num(n1), Num(n2)) -> if n1 > n2 then unif else raise NOT_UNIFIABLE
+          | _ -> raise NOT_UNIFIABLE
+    )
+  | A("<", [t1; t2]) -> (
+      match (simplify_term (subst unif t1), simplify_term (subst unif t2)) with
+          (Num(n1), Num(n2)) -> if n1 < n2 then unif else raise NOT_UNIFIABLE
+        | _ -> raise NOT_UNIFIABLE
+    )
   | _ -> unif
 ;;
 
@@ -234,7 +269,7 @@ let rec solve_goal (prog:program) (g:goal) (unif:substitution) (vars:variable li
         else (false, [])
       )
     | G(a::gs) -> match a with
-          A("_eq", _) -> (
+          A("_eq", _) | A(">", _) | A("<", _) -> (
             try solve_goal prog (G(gs)) (eval a unif) vars
             with NOT_UNIFIABLE -> (false, [])
           )
