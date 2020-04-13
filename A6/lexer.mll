@@ -7,9 +7,7 @@ let alpha_num = ['A'-'Z' 'a'-'z' '0'-'9' '_']
 let var = ['A'-'Z'](alpha_num*)
 let cons = ['a'-'z'](alpha_num*) | ("\"" [^ '\"']+ "\"")
 let sp = [' ' '\t' '\n']+
-let digit = ['0'-'9']
-let digit_ = ['1'-'9']
-let number = ['+''-']?('0'|['1'-'9']['0'-'9']*)
+let number = '0'|['1'-'9']['0'-'9']*
 
 rule read = parse
     eof                   {EOF}

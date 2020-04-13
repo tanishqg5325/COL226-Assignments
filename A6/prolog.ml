@@ -29,7 +29,7 @@ try
       match (interpret_goal prog g) with
           (true, _) -> print_string "true.\n"
         | (false, _) -> print_string "false.\n"
-    with | _ -> print_string "Invalid query\n"
+    with e -> Printf.printf "%s\n" (Printexc.to_string e)
   done
 
 with _ -> print_string "\n% halt\n"
