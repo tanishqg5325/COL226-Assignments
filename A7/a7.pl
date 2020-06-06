@@ -1,6 +1,7 @@
 isPresent(X, [X | Z]).
 isPresent(X, [Y | Z]) :- isPresent(X, Z).
 
+
 type(typeVar(X)).
 
 type(tint).
@@ -18,16 +19,25 @@ hastype(Gamma, N, tint) :- integer(N).
 hastype(Gamma, true, tbool).
 hastype(Gamma, false, tbool).
 
-hastype(Gamma, add(X, Y), tint) :- hastype(Gamma, X, tint), hastype(Gamma, Y, tint).
-hastype(Gamma, sub(X, Y), tint) :- hastype(Gamma, X, tint), hastype(Gamma, Y, tint).
-hastype(Gamma, mul(X, Y), tint) :- hastype(Gamma, X, tint), hastype(Gamma, Y, tint).
-hastype(Gamma, div(X, Y), tint) :- hastype(Gamma, X, tint), hastype(Gamma, Y, tint).
+hastype(Gamma, abs(E), tint) :- hastype(Gamma, E, tint).
+hastype(Gamma, add(E1, E2), tint) :- hastype(Gamma, E1, tint), hastype(Gamma, E2, tint).
+hastype(Gamma, sub(E1, E2), tint) :- hastype(Gamma, E1, tint), hastype(Gamma, E2, tint).
+hastype(Gamma, mul(E1, E2), tint) :- hastype(Gamma, E1, tint), hastype(Gamma, E2, tint).
+hastype(Gamma, div(E1, E2), tint) :- hastype(Gamma, E1, tint), hastype(Gamma, E2, tint).
+hastype(Gamma, mod(E1, E2), tint) :- hastype(Gamma, E1, tint), hastype(Gamma, E2, tint).
 
-hastype(Gamma, and(X, Y), tbool) :- hastype(Gamma, X, tbool), hastype(Gamma, Y, tbool).
-hastype(Gamma, or(X, Y), tbool) :- hastype(Gamma, X, bool), hastype(Gamma, Y, tbool).
-hastype(Gamma, not(X), tbool) :- hastype(Gamma, X, tbool).
+hastype(Gamma, not(E), tbool) :- hastype(Gamma, E, tbool).
+hastype(Gamma, and(E1, E2), tbool) :- hastype(Gamma, E1, tbool), hastype(Gamma, E2, tbool).
+hastype(Gamma, or(E1, E2), tbool) :- hastype(Gamma, E1, tbool), hastype(Gamma, E2, tbool).
 
-hastype(Gamma, less(X, Y), tbool) :- hastype(Gamma, X, tint), hastype(Gamma, Y, tint).
-hastype(Gamma, greater(X, Y), tbool) :- hastype(Gamma, X, tint), hastype(Gamma, Y, tint).
+hastype(Gamma, less(E1, E2), tbool) :- hastype(Gamma, E1, tint), hastype(Gamma, E2, tint).
+hastype(Gamma, greater(E1, E2), tbool) :- hastype(Gamma, E1, tint), hastype(Gamma, E2, tint).
+hastype(Gamma, less_eq(E1, E2), tbool) :- hastype(Gamma, E1, tint), hastype(Gamma, E2, tint).
+hastype(Gamma, greater_eq(E1, E2), tbool) :- hastype(Gamma, E1, tint), hastype(Gamma, E2, tint).
+hastype(Gamma, not_eq(E1, E2), tbool) :- hastype(Gamma, E1, tint), hastype(Gamma, E2, tint).
 
-hastype(Gamma, eq(X, Y), tbool) :- hastype(Gamma, X, T), hastype(Gamma, Y, T).
+hastype(Gamma, eq(E1, E2), tbool) :- hastype(Gamma, E1, T), hastype(Gamma, E2, T).
+
+hastype(Gamma, if_then_else(E1, E2, E3), T) :- hastype(Gamma, E1, tbool), hastype(Gamma, E2, T), hastype(Gamma, E3, T).
+
+
