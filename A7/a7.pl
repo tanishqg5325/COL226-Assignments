@@ -1,6 +1,12 @@
 isPresent(X, [X | Z]).
 isPresent(X, [Y | Z]) :- isPresent(X, Z).
 
+len([], 0).
+len([X | Y], Z) :- len(Y, W), Z is W + 1.
+
+find([X | Y], 1, X).
+find([X | Y], I, Z) :- J is I-1, find(Y, J, Z).
+
 
 type(typeVar(X)).
 
@@ -40,4 +46,9 @@ hastype(Gamma, eq(E1, E2), tbool) :- hastype(Gamma, E1, T), hastype(Gamma, E2, T
 
 hastype(Gamma, if_then_else(E1, E2, E3), T) :- hastype(Gamma, E1, tbool), hastype(Gamma, E2, T), hastype(Gamma, E3, T).
 
+hastype(Gamma, func(E1, E2), T2) :- hastype(Gamma, E1, arrow(T1, T2)), hastype(Gamma, E2, T1).
 
+hastype(Gamma, [], []).
+hastype(Gamma, [E1 | En], [T1 | Tn]) :- hastype(Gamma, E1, T1), hastype(Gamma, En, Tn).
+
+hastype(Gamma, proj(I, E), T) :- 1 =< I, len(E, L), I =< L, hastype(Gamma, E, TT), find(TT, I, T).
