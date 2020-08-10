@@ -95,11 +95,12 @@ let rec col_ans (s:sheet) (r:range) f (e:float): float list =
             else if i2 < 0 then (mkzerov (j2-j1+1) e)
             else
               let rec merge (v1:value list) (v2:float list) (i1:int) (i2:int): float list =
-                if i1 > 0 then merge v1 v2 (i1-1) (i2-1)
-                else if i2 < 0 then []
-                else match v1 with 
-                    [] -> raise EmptyCell
-                  | v::vs -> match v with
+                match v1 with
+                    [] -> if i2 < 0 then [] else raise EmptyCell
+                  | v::vs ->
+                      if i1 > 0 then merge vs v2 (i1-1) (i2-1)
+                      else if i2 < 0 then []
+                      else match v with
                         FLOAT(c) -> (f c (List.hd v2))::merge vs (List.tl v2) 0 (i2-1)
                       | UNDEFINED -> raise EmptyCell
               in merge x (col_ans xs (RANGE(INDICE(0, j1), INDICE(i2-1, j2))) f e) j1 j2;;
@@ -154,11 +155,12 @@ let rec col_count_ans (s:sheet) (r:range): float list =
           else if i2 < 0 then mkzerov (j2-j1+1)
           else
             let rec merge (v1:value list) (v2:float list) (i1:int) (i2:int): float list =
-              if i1 > 0 then merge v1 v2 (i1-1) (i2-1)
-              else if i2 < 0 then []
-              else match v1 with
+              match v1 with
                   [] -> v2
-                | v::vs -> match v with
+                | v::vs ->
+                    if i1 > 0 then merge vs v2 (i1-1) (i2-1)
+                    else if i2 < 0 then []
+                    else match v with
                       FLOAT(c) -> (1. +. (List.hd v2))::merge vs (List.tl v2) 0 (i2-1)
                     | UNDEFINED -> (List.hd v2)::merge vs (List.tl v2) 0 (i2-1)
             in merge x (col_count_ans xs (RANGE(INDICE(0, j1), INDICE(i2-1, j2)))) j1 j2;;
