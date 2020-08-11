@@ -10,15 +10,14 @@ append([X | Xs], L2, [X | L]) :- append(Xs, L2, L).
 isPresent(X, [X | _]) :- !.
 isPresent(X, [_ | Z]) :- isPresent(X, Z).
 
-intersection([], L2).
+intersection([], _).
 intersection([(X, _) | Xs], L2) :- \+ isPresent((X, _), L2), intersection(Xs, L2).
 
 find([], _, _) :- fail.
+find([(X, _) | Xs], X_, Z) :- X \= X_, find(Xs, X_, Z).
 find([(X, Y) | _], X, Y) :- !.
-find([_ | Xs], X, Y) :- find(Xs, X, Y).
+find([(X, _) | _], X, _) :- fail.
 
-
-type(typeVar(_)).
 
 type(tbool).
 type(tint).
@@ -31,9 +30,9 @@ type(cartesian([T1 | Tn])) :- type(T1), type(cartesian(Tn)).
 
 hastype(Gamma, var(X), T) :- find(Gamma, var(X), T).
 
-hastype(Gamma, N, tint) :- integer(N).
-hastype(Gamma, true, tbool).
-hastype(Gamma, false, tbool).
+hastype(_, N, tint) :- integer(N).
+hastype(_, true, tbool).
+hastype(_, false, tbool).
 
 hastype(Gamma, abs(E), tint) :- hastype(Gamma, E, tint).
 hastype(Gamma, add(E1, E2), tint) :- hastype(Gamma, E1, tint), hastype(Gamma, E2, tint).
@@ -58,11 +57,11 @@ hastype(Gamma, if_then_else(E1, E2, E3), T) :- hastype(Gamma, E1, tbool), hastyp
 
 hastype(Gamma, let_in_end(D, E), T) :- typeElaborates(Gamma, D, Gamma_), append(Gamma_, Gamma, Gamma__), hastype(Gamma__, E, T).
 
-hastype(Gamma, lambda(var(X), E), arrow(T1, T2)) :- hastype([(var(X), T1) | Gamma], E, T2).
+hastype(Gamma, lambda(var(X), E), arrow(T1, T2)) :- hastype([(var(X), T1) | Gamma], E, T2), type(T1).
 
 hastype(Gamma, func(E1, E2), T2) :- hastype(Gamma, E1, arrow(T1, T2)), hastype(Gamma, E2, T1).
 
-hastype(Gamma, tuple([]), cartesian([])).
+hastype(_, tuple([]), cartesian([])).
 hastype(Gamma, tuple([E1 | En]), cartesian([T1 | Tn])) :- hastype(Gamma, E1, T1), hastype(Gamma, tuple(En), cartesian(Tn)).
 
 hastype(Gamma, proj(I, tuple(E)), T) :- 1 =< I, len(E, L), I =< L, hastype(Gamma, tuple(E), cartesian(TT)), findnth(TT, I, T).

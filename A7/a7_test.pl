@@ -28,8 +28,18 @@ typeElaborates([], local(def(var(x), 9), def(var(y), eq(-8, var(x)))), Gamma_).
 
 hastype([], let_in_end(def(var(x), 3), mul(var(x), 2)), T).
 hastype([(var(x), tint)], let_in_end(def(var(y), 0), mod(var(y), var(x))), T).
+hastype([(var(z), tbool)], let_in_end(sequential(parallel(def(var(x), 3), def(var(y), false)), def(var(y), -4)), and(var(z), var(y))), T). % false
+hastype([(var(z), tint)], let_in_end(sequential(parallel(def(var(x), 3), def(var(y), false)), def(var(y), -4)), add(var(z), var(y))), T).
+hastype([(var(x), tbool)], let_in_end(local(def(var(x), 9), def(var(y), eq(-8, var(x)))), or(var(x), var(y))), T).
+
+hastype([(var(x), tbool), (var(y), tint)], lambda(var(x), add(var(y), 3)), T).
+hastype([], lambda(var(x), tuple([add(5, var(x))])), T).
+hastype([], func(lambda(var(x), tuple([add(5, var(x))])), 9), T).
+hastype([], func(lambda(var(x), tuple([add(5, var(x))])), false), T). % false
+hastype([(var(x), tint)], lambda(var(y), add(var(x), var(y))), T).
 
 hastype([], tuple([32, false, tuple([true, 9, 5])]), T).
 
-hastype([(var(x), tint)], proj(5, tuple([6, false, var(x), let_in_end(def(var(y), 1), div(var(y), 8))])), T).
+hastype([(var(x), tint)], proj(4, tuple([6, false, var(x), let_in_end(def(var(y), 1), div(var(y), 8))])), T).
 hastype([], proj(5, tuple([false, tuple([9]), true, mod(9, 4), eq(tuple([2, true]), tuple([5, false]))])), T).
+hastype([], proj(6, tuple([false, tuple([9]), true, mod(9, 4), eq(tuple([2, true]), tuple([5, false]))])), T). % false
