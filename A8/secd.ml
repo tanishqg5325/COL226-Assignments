@@ -69,25 +69,27 @@ let secd (e:environment) (ex:exp): answer = execute [] e (compile ex) []
 
 secd [] (Num(9));;
 secd [] (Bool(false));;
-secd [(V("z"), N(124))] (Var(V("z")));;
-secd [(V("z"), N(124))] (Var(V("x")));;
-secd [(V("z"), B(true))] (Var(V("z")));;
+secd [(V "z", N(124))] (Var(V "z"));;
+secd [(V "z", N(124))] (Var(V "x"));;
+secd [(V "z", B(true))] (Var(V "z"));;
 
 secd [] (Plus(Num(4), Num(7)));;
 secd [] (Times(Num(4), Bool(false)));;
-secd [(V("a"), N(8)); (V("b"), N(9))] (Plus(Num(3), Times(Var(V("a")), Var(V("b")))));;
-secd [(V("a"), N(8)); (V("b"), N(9))] (Times(Num(3), Plus(Var(V("a")), Var(V("b")))));;
+secd [(V "a", N(8)); (V "b", N(9))] (Plus(Num(3), Times(Var(V "a"), Var(V "b"))));;
+secd [(V "a", N(8)); (V "b", N(9))] (Times(Num(3), Plus(Var(V "a"), Var(V "b"))));;
 
 secd [] (CompWith0(Plus(Num(3), Num(-3))));;
 secd [] (CompWith0(Plus(Num(3), Num(-5))));;
-secd [(V("p"), N(96))] (CompWith0(Times(Num(0), Var(V("p")))));;
+secd [(V "p", N(96))] (CompWith0(Times(Num(0), Var(V "p"))));;
 
 secd [(V "a", N(1))] (IfThenElse(CompWith0(Var(V "a")), Num(5), Num(7)));;
 secd [(V "a", N(-1))] (IfThenElse(CompWith0(Var(V "a")), Num(5), Num(7)));;
 secd [(V "a", N(-6))] (IfThenElse(CompWith0(Var(V "a")), Var(V "a"), Num(0)));; (* Max(a, 0) *)
 
-secd [] (Invoke(Lambda(V("x"), Times(Var(V("x")), Num(5))), Plus(Num(2), Num(4))));;
-let f = secd [(V("y"), N(2))] (Lambda(V("x"), Plus(Var(V("x")), Var(V("y")))));;
-secd [(V("f"), f)] (Invoke(Var(V("f")), Num(5)));;
-let sq = secd [] (Lambda(V("x"), Times(Var(V("x")), Var(V("x")))));;
-secd [(V("sq"), sq)] (Invoke(Var(V("sq")), Num(35)));;
+secd [] (Invoke(Lambda(V "x", Times(Var(V "x"), Num(5))), Plus(Num(2), Num(4))));;
+let f = secd [(V "y", N(2))] (Lambda(V "x", Plus(Var(V "x"), Var(V "y"))));;
+secd [(V "f", f); (V "y", N(8))] (Invoke(Var(V "f"), Var(V "y")));;
+let sq = secd [] (Lambda(V "x", Times(Var(V "x"), Var(V "x"))));;
+secd [(V "sq", sq)] (Invoke(Var(V "sq"), Num(35)));;
+let max0 = secd [(V "sq", sq)] (Lambda(V "x", IfThenElse(CompWith0(Var(V "x")), Invoke(Var(V "sq"), Var(V "x")), Num(0))));;
+secd [(V "max0", max0); (V "m", N(9))] (Times(Num(3), Invoke(Var(V "max0"), Var(V "m"))));;
